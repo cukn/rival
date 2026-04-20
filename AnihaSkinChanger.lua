@@ -1,113 +1,132 @@
-local Players = game:GetService("Players")
+-- ╔══════════════════════════════════════════════════════╗
+-- ║        ANIHA SKIN CHANGER  v5.0                     ║
+-- ║  Press K to toggle  |  Press / to chat while hidden ║
+-- ╚══════════════════════════════════════════════════════╝
+local Players           = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-local Lighting = game:GetService("Lighting")
-local player = Players.LocalPlayer
+local UserInputService  = game:GetService("UserInputService")
+local RunService        = game:GetService("RunService")
+local Lighting          = game:GetService("Lighting")
+local TextChatService   = game:GetService("TextChatService")
+local StarterGui        = game:GetService("StarterGui")
+local player            = Players.LocalPlayer
+local mouse             = player:GetMouse()
 
 -- ═══════════════════════════════════════════════
 -- SKIN LISTS
 -- ═══════════════════════════════════════════════
 local SkinLists = {
-    ["Assault Rifle"] = {"Default", "AK-47", "AUG", "Tommy Gun", "Boneclaw Rifle", "Gingerbread AUG", "AKEY-47", "100K Visits", "10 Billion Visits", "Phoenix Rifle"},
-    ["Bow"] = {"Default", "Compound Bow", "Raven Bow", "Dream Bow", "Bat Bow", "Frostbite Bow", "Beloved Bow", "Balloon Bow", "Glorious Bow", "Key Bow", "Arch Bow"},
-    ["Burst Rifle"] = {"Default", "Electro Burst", "Aqua Burst", "FAMAS", "Spectral Burst", "Pine Burst"},
-    ["Crossbow"] = {"Default", "Pixel Crossbow", "Harpoon Crossbow", "Violin Crossbow", "Crossbone", "Frostbite Crossbow", "Arch Crossbow", "Glorious Crossbow"},
-    ["Distortion"] = {"Default", "Plasma Distortion", "Magma Distortion", "Cyber Distortion", "Expirement D15", "Sleighstortion"},
-    ["Energy Rifle"] = {"Default", "Hacker Rifle", "Hydro Rifle", "Void Rifle", "Soul Rifle", "New Years Energy Rifle"},
-    ["Flamethrower"] = {"Default", "Pixel Flamethrower", "Lamethrower", "Glitterthrower", "Jack O' Thrower", "Snowblower", "Keythrower", "Rainbowthrower"},
-    ["Grenade Launcher"] = {"Default", "Swashbuckler", "Uranium Launcher", "Gearnade Launcher", "Skull Grenade Launcher", "Snowball Launcher"},
-    ["Gunblade"] = {"Default", "Hyper Gunblade", "Crude Gunblade", "Gunsaw", "Boneblade", "Elf's Gunblade"},
-    ["Minigun"] = {"Default", "Lasergun 3000", "Pixel Minigun", "Fighter Jet", "Pumpkin Minigun", "Wrapped Minigun"},
-    ["Paintball Gun"] = {"Default", "Slime Gun", "Boba Gun", "Ketchup Gun", "Brain Gun", "Snowball Gun"},
-    ["RPG"] = {"Default", "Nuke Launcher", "Spaceship Launcher", "Squid Launcher", "Pumpkin Launcher", "Firework Launcher"},
-    ["Shotgun"] = {"Default", "Balloon Shotgun", "Hyper Shotgun", "Cactus Shotgun", "Broomstick", "Wrapped Shotgun"},
-    ["Sniper"] = {"Default", "Pixel Sniper", "Hyper Sniper", "Event Horizon", "Eyething Sniper", "Gingerbread Sniper", "Keyper", "Glorious Sniper"},
-    ["Daggers"] = {"Default", "Aces", "Paper Planes", "Shurikens", "Bat Daggers", "Cookies", "Crystal Daggers", "Keynais"},
-    ["Energy Pistols"] = {"Default", "Void Pistols", "Hydro Pistols", "Soul Pistols", "New Years Energy Pistols"},
-    ["Exogun"] = {"Default", "Singularity", "Raygun", "Repulsor", "Exogourd", "Midnight Festive Exogun"},
-    ["Flare Gun"] = {"Default", "Firework Gun", "Dynamite Gun", "Banana Flare", "Vexed Flare Gun", "Wrapped Flare Gun"},
-    ["Handgun"] = {"Default", "Blaster", "Hand Gun", "Gumball Handgun", "Pumpkin Handgun", "Gingerbread Handgun"},
-    ["Revolver"] = {"Default", "Desert Eagle", "Sheriff", "Peppergun", "Boneclaw Revolver", "Peppermint Sheriff"},
-    ["Shorty"] = {"Default", "Not So Shorty", "Lovely Shorty", "Balloon Shorty", "Demon Shorty", "Wrapped Shorty"},
-    ["Slingshot"] = {"Default", "Stick", "Goal Post", "Harp", "Boneshot", "Reindeer Slingshot", "Lucky Horseshoe"},
-    ["Spray"] = {"Default", "Lovely Spray", "Nail Gun", "Bottle Spray", "Boneclaw Spray", "Pine Spray", "Key Spray"},
-    ["Uzi"] = {"Default", "Water Uzi", "Electro Uzi", "Money Gun", "Demon Uzi", "Pine Uzi"},
-    ["Warper"] = {"Default", "Glitter Warper", "Arcane Warper", "Hotel Bell", "Experiment W4", "Frost Warper"},
-    ["Battle Axe"] = {"Default", "The Shred", "Ban Axe", "Cerulean Axe", "Mimic Axe", "Nordic Axe"},
-    ["Chainsaw"] = {"Default", "Blobsaw", "Handsaws", "Mega Drill", "Buzzsaw", "Festive Buzzsaw"},
-    ["Fists"] = {"Default", "Fist", "Boxing Gloves", "Fists of Hurt", "Brass Knuckles", "Festive Fists", "Glorious Fists", "Pumpkin Claws"},
-    ["Katana"] = {"Default", "Saber", "Lightning Bolt", "Stellar Katana", "Evil Trident", "New Years Katana", "Keytana", "Arch Katana", "Crystal Katana", "Pixel Katana", "Glorious Katana"},
-    ["Knife"] = {"Default", "Chancla", "Karambit", "Balisong", "Machete", "Candy Cane", "Keylisong", "Keyrambit", "Caladbolg"},
-    ["Riot Shield"] = {"Default", "Door", "Energy Shield", "Masterpiece", "Tombstone Shield", "Sled"},
-    ["Scythe"] = {"Default", "Scythe of Death", "Anchor", "Sakura Scythe", "Bat Scythe", "Cryo Scythe", "Crystal Scythe", "Keythe", "Bug Net", "Arch Scythe"},
-    ["Trowel"] = {"Default", "Plastic Shovel", "Garden Shovel", "Paintbrush", "Pumpkin Carver", "Snow Shovel"},
-    ["Flashbang"] = {"Default", "Disco Ball", "Camera", "Lightbulb", "Skullbang", "Shining Star"},
-    ["Freeze Ray"] = {"Default", "Temporal Ray", "Bubble Ray", "Gum Ray", "Spider Ray", "Wrapped Freeze Ray"},
-    ["Grenade"] = {"Default", "Whoopee Cushion", "Water Balloon", "Dynamite", "Soul Grenade", "Jingle Grenade"},
-    ["Jump Pad"] = {"Default", "Trampoline", "Bounce House", "Shady Chicken Sandwich", "Spider Web", "Jolly Man"},
-    ["Medkit"] = {"Default", "Sandwich", "Laptop", "Medkitty", "Bucket of Candy", "Milk & Cookies", "Box of Chocolates", "Briefcase"},
-    ["Molotov"] = {"Default", "Coffee", "Torch", "Lava Lamp", "Vexed Candle", "Hot Coals", "Arch Molotov"},
-    ["Satchel"] = {"Default", "Advanced Satchel", "Notebook Satchel", "Bag O' Money", "Potion Satchel", "Suspicious Gift"},
-    ["Smoke Grenade"] = {"Default", "Emoji Cloud", "Balance", "Hourglass", "Eyeball", "Snowglobe"},
-    ["Subspace Tripmine"] = {"Default", "Don't Press", "Spring", "DIY Tripmine", "Trick or Treat", "Dev In the Box", "Pot O Keys"},
-    ["War Horn"] = {"Default", "Trumpet", "Megaphone", "Air Horn", "Boneclaw Horn", "Mammoth Horn"},
-    ["Warpstone"] = {"Default", "Cyber Warpstone", "Teleport Disc", "Electropunk Warpstone", "Warpbone", "Warpstar"},
-    ["Permafrost"] = {"Default", "Snowman Permafrost", "Ice Permafrost", "Glorious Permafrost"},
+    ["Assault Rifle"]    = {"Default","AK-47","AUG","Tommy Gun","Boneclaw Rifle","Gingerbread AUG","AKEY-47","100K Visits","10 Billion Visits","Phoenix Rifle"},
+    ["Bow"]              = {"Default","Compound Bow","Raven Bow","Dream Bow","Bat Bow","Frostbite Bow","Beloved Bow","Balloon Bow","Glorious Bow","Key Bow","Arch Bow"},
+    ["Burst Rifle"]      = {"Default","Electro Burst","Aqua Burst","FAMAS","Spectral Burst","Pine Burst"},
+    ["Crossbow"]         = {"Default","Pixel Crossbow","Harpoon Crossbow","Violin Crossbow","Crossbone","Frostbite Crossbow","Arch Crossbow","Glorious Crossbow"},
+    ["Distortion"]       = {"Default","Plasma Distortion","Magma Distortion","Cyber Distortion","Expirement D15","Sleighstortion"},
+    ["Energy Rifle"]     = {"Default","Hacker Rifle","Hydro Rifle","Void Rifle","Soul Rifle","New Years Energy Rifle"},
+    ["Flamethrower"]     = {"Default","Pixel Flamethrower","Lamethrower","Glitterthrower","Jack O' Thrower","Snowblower","Keythrower","Rainbowthrower"},
+    ["Grenade Launcher"] = {"Default","Swashbuckler","Uranium Launcher","Gearnade Launcher","Skull Grenade Launcher","Snowball Launcher"},
+    ["Gunblade"]         = {"Default","Hyper Gunblade","Crude Gunblade","Gunsaw","Boneblade","Elf's Gunblade"},
+    ["Minigun"]          = {"Default","Lasergun 3000","Pixel Minigun","Fighter Jet","Pumpkin Minigun","Wrapped Minigun"},
+    ["Paintball Gun"]    = {"Default","Slime Gun","Boba Gun","Ketchup Gun","Brain Gun","Snowball Gun"},
+    ["RPG"]              = {"Default","Nuke Launcher","Spaceship Launcher","Squid Launcher","Pumpkin Launcher","Firework Launcher"},
+    ["Shotgun"]          = {"Default","Balloon Shotgun","Hyper Shotgun","Cactus Shotgun","Broomstick","Wrapped Shotgun"},
+    ["Sniper"]           = {"Default","Pixel Sniper","Hyper Sniper","Event Horizon","Eyething Sniper","Gingerbread Sniper","Keyper","Glorious Sniper"},
+    ["Daggers"]          = {"Default","Aces","Paper Planes","Shurikens","Bat Daggers","Cookies","Crystal Daggers","Keynais"},
+    ["Energy Pistols"]   = {"Default","Void Pistols","Hydro Pistols","Soul Pistols","New Years Energy Pistols"},
+    ["Exogun"]           = {"Default","Singularity","Raygun","Repulsor","Exogourd","Midnight Festive Exogun"},
+    ["Flare Gun"]        = {"Default","Firework Gun","Dynamite Gun","Banana Flare","Vexed Flare Gun","Wrapped Flare Gun"},
+    ["Handgun"]          = {"Default","Blaster","Hand Gun","Gumball Handgun","Pumpkin Handgun","Gingerbread Handgun"},
+    ["Revolver"]         = {"Default","Desert Eagle","Sheriff","Peppergun","Boneclaw Revolver","Peppermint Sheriff"},
+    ["Shorty"]           = {"Default","Not So Shorty","Lovely Shorty","Balloon Shorty","Demon Shorty","Wrapped Shorty"},
+    ["Slingshot"]        = {"Default","Stick","Goal Post","Harp","Boneshot","Reindeer Slingshot","Lucky Horseshoe"},
+    ["Spray"]            = {"Default","Lovely Spray","Nail Gun","Bottle Spray","Boneclaw Spray","Pine Spray","Key Spray"},
+    ["Uzi"]              = {"Default","Water Uzi","Electro Uzi","Money Gun","Demon Uzi","Pine Uzi"},
+    ["Warper"]           = {"Default","Glitter Warper","Arcane Warper","Hotel Bell","Experiment W4","Frost Warper"},
+    ["Battle Axe"]       = {"Default","The Shred","Ban Axe","Cerulean Axe","Mimic Axe","Nordic Axe"},
+    ["Chainsaw"]         = {"Default","Blobsaw","Handsaws","Mega Drill","Buzzsaw","Festive Buzzsaw"},
+    ["Fists"]            = {"Default","Fist","Boxing Gloves","Fists of Hurt","Brass Knuckles","Festive Fists","Glorious Fists","Pumpkin Claws"},
+    ["Katana"]           = {"Default","Saber","Lightning Bolt","Stellar Katana","Evil Trident","New Years Katana","Keytana","Arch Katana","Crystal Katana","Pixel Katana","Glorious Katana"},
+    ["Knife"]            = {"Default","Chancla","Karambit","Balisong","Machete","Candy Cane","Keylisong","Keyrambit","Caladbolg"},
+    ["Riot Shield"]      = {"Default","Door","Energy Shield","Masterpiece","Tombstone Shield","Sled"},
+    ["Scythe"]           = {"Default","Scythe of Death","Anchor","Sakura Scythe","Bat Scythe","Cryo Scythe","Crystal Scythe","Keythe","Bug Net","Arch Scythe"},
+    ["Trowel"]           = {"Default","Plastic Shovel","Garden Shovel","Paintbrush","Pumpkin Carver","Snow Shovel"},
+    ["Flashbang"]        = {"Default","Disco Ball","Camera","Lightbulb","Skullbang","Shining Star"},
+    ["Freeze Ray"]       = {"Default","Temporal Ray","Bubble Ray","Gum Ray","Spider Ray","Wrapped Freeze Ray"},
+    ["Grenade"]          = {"Default","Whoopee Cushion","Water Balloon","Dynamite","Soul Grenade","Jingle Grenade"},
+    ["Jump Pad"]         = {"Default","Trampoline","Bounce House","Shady Chicken Sandwich","Spider Web","Jolly Man"},
+    ["Medkit"]           = {"Default","Sandwich","Laptop","Medkitty","Bucket of Candy","Milk & Cookies","Box of Chocolates","Briefcase"},
+    ["Molotov"]          = {"Default","Coffee","Torch","Lava Lamp","Vexed Candle","Hot Coals","Arch Molotov"},
+    ["Satchel"]          = {"Default","Advanced Satchel","Notebook Satchel","Bag O' Money","Potion Satchel","Suspicious Gift"},
+    ["Smoke Grenade"]    = {"Default","Emoji Cloud","Balance","Hourglass","Eyeball","Snowglobe"},
+    ["Subspace Tripmine"]= {"Default","Don't Press","Spring","DIY Tripmine","Trick or Treat","Dev In the Box","Pot O Keys"},
+    ["War Horn"]         = {"Default","Trumpet","Megaphone","Air Horn","Boneclaw Horn","Mammoth Horn"},
+    ["Warpstone"]        = {"Default","Cyber Warpstone","Teleport Disc","Electropunk Warpstone","Warpbone","Warpstar"},
+    ["Permafrost"]       = {"Default","Snowman Permafrost","Ice Permafrost","Glorious Permafrost"},
 }
 
 -- ═══════════════════════════════════════════════
--- KILL FINISHER LIST
+-- KILL FINISHER LIST  (per-weapon: weapon name → finisher)
 -- ═══════════════════════════════════════════════
 local FinisherList = {
-    "Balloons", "Beacon", "BONK!", "Boogie", "Broom Ride", "Chark Attack",
-    "Clapped", "Crushed", "Darkheart", "Disco Fever", "Dynamite",
-    "Electrocuted", "Explode", "Freeze", "Gone Fishing", "Haunted",
-    "Into The Void", "Jingle", "Key Drop", "Launched", "Merry Christmas",
-    "Obliterated", "Party Time", "Pixel Death", "Pumpkin Bomb", "Recalled",
-    "Rocket Launch", "Shattered", "Spaghettified", "Stomped",
-    "Summoned", "Teleported", "Tombstone", "Vortex", "Wrapped Up",
+    "Balloons","Beacon","BONK!","Boogie","Broom Ride","Chark Attack",
+    "Clapped","Crushed","Darkheart","Disco Fever","Dynamite",
+    "Electrocuted","Explode","Freeze","Gone Fishing","Haunted",
+    "Into The Void","Jingle","Key Drop","Launched","Merry Christmas",
+    "Obliterated","Party Time","Pixel Death","Pumpkin Bomb","Recalled",
+    "Rocket Launch","Shattered","Spaghettified","Stomped",
+    "Summoned","Teleported","Tombstone","Vortex","Wrapped Up",
 }
 
--- Sorted wrap list: None + Dark pinned first, rest alphabetical
+-- Wrap list
 local WrapList = {
-    "None", "Dark",
-    ".exe wrap", "A5", "Black Damascus", "Black Dark Wrap", "Black Glass", "Black Opal Wrap",
-    "Blush Wrapping", "Brain", "Cardinal", "Carpet Wrap", "Cheese", "Circuit", "Clouds",
-    "Community Wrap", "Cross Wrap", "Crystalliz", "Damascus", "Danger", "Dawn",
-    "Diamond", "Digital Camo", "Frosted", "Gingerbread", "Glass", "Gold", "Groove",
-    "Hesper", "Hollow Wrap", "Hologram Arena", "Honeycomb Wrap", "Hyperdrive",
-    "Ladybug", "Lovely Leopard", "Maganite", "Mainframe Wrap", "Meat Wrap",
-    "Mesh", "Midas Touch", "Moonstone", "Nauseite", "Neon Lights", "Nova",
-    "Ocean Camo", "OranGG", "PB&J Wrap", "Patriot", "Pink Lemonade",
-    "Pixel Camo", "Reptile", "Rift Wrap", "Sensite", "Slime Wrap", "Spectral",
-    "Starblaze", "Starfall", "Street Camo", "Sunset", "Supernova", "Termination",
-    "Urban Camo", "Water", "Watermelon", "Woven",
+    "None","Dark",
+    ".exe wrap","A5","Black Damascus","Black Dark Wrap","Black Glass","Black Opal Wrap",
+    "Blush Wrapping","Brain","Cardinal","Carpet Wrap","Cheese","Circuit","Clouds",
+    "Community Wrap","Cross Wrap","Crystalliz","Damascus","Danger","Dawn",
+    "Diamond","Digital Camo","Frosted","Gingerbread","Glass","Gold","Groove",
+    "Hesper","Hollow Wrap","Hologram Arena","Honeycomb Wrap","Hyperdrive",
+    "Ladybug","Lovely Leopard","Maganite","Mainframe Wrap","Meat Wrap",
+    "Mesh","Midas Touch","Moonstone","Nauseite","Neon Lights","Nova",
+    "Ocean Camo","OranGG","PB&J Wrap","Patriot","Pink Lemonade",
+    "Pixel Camo","Reptile","Rift Wrap","Sensite","Slime Wrap","Spectral",
+    "Starblaze","Starfall","Street Camo","Sunset","Supernova","Termination",
+    "Urban Camo","Water","Watermelon","Woven",
 }
 
 -- ═══════════════════════════════════════════════
--- PERFORMANCE STATE
+-- GLOBAL STATE
 -- ═══════════════════════════════════════════════
-_G.PerfSettings = _G.PerfSettings or {
-    DamageColor = Color3.fromRGB(255, 50, 50),
-}
+_G.AnihaVersion = "5.0"
+_G.ActiveTab    = "Skins"
+_G.EquippedData = _G.EquippedData or {}
+for w in pairs(SkinLists) do
+    if not _G.EquippedData[w] then _G.EquippedData[w] = {Skin="Default", Wrap="None", Finisher="None"} end
+end
+
+_G.PerfSettings = _G.PerfSettings or { DamageColor = Color3.fromRGB(255,50,50) }
+_G.OutlineSettings = _G.OutlineSettings or { Enabled=true, Color=Color3.fromRGB(255,80,80) }
+_G.AimAssist = _G.AimAssist or { Enabled=false, Strength=0.4, Range=80 }
+_G.WeaponHidden = _G.WeaponHidden or false
+_G.ArmsHidden   = _G.ArmsHidden   or false
+_G.HideMuzzle   = _G.HideMuzzle   or false
+_G.HideBullets  = _G.HideBullets  or false
+_G.HideReload   = _G.HideReload   or false
+_G.HideNames    = _G.HideNames    or false
+_G.HideChat     = _G.HideChat     or false
 
 -- ═══════════════════════════════════════════════
--- SAVE / LOAD CONFIG
+-- SAVE / LOAD
 -- ═══════════════════════════════════════════════
 local SAVE_FILE = "AnihaSkinConfig.json"
-
 local function SaveConfig()
     local ok = pcall(function()
         local data = {}
         for w, info in pairs(_G.EquippedData) do
-            data[w] = {Skin = info.Skin or "Default", Wrap = info.Wrap or "None"}
+            data[w] = {Skin=info.Skin or "Default", Wrap=info.Wrap or "None", Finisher=info.Finisher or "None"}
         end
         writefile(SAVE_FILE, game:GetService("HttpService"):JSONEncode(data))
     end)
     return ok
 end
-
 local function LoadConfig()
     local ok, res = pcall(function()
         if isfile(SAVE_FILE) then return game:GetService("HttpService"):JSONDecode(readfile(SAVE_FILE)) end
@@ -116,27 +135,17 @@ local function LoadConfig()
     if ok and res then
         for w, info in pairs(res) do
             if _G.EquippedData[w] then
-                _G.EquippedData[w].Skin = info.Skin or "Default"
-                _G.EquippedData[w].Wrap = info.Wrap or "None"
+                _G.EquippedData[w].Skin     = info.Skin     or "Default"
+                _G.EquippedData[w].Wrap     = info.Wrap     or "None"
+                _G.EquippedData[w].Finisher = info.Finisher or "None"
             end
         end
         return true
     end
     return false
 end
-
--- ═══════════════════════════════════════════════
--- GLOBAL STATE
--- ═══════════════════════════════════════════════
-_G.ActiveTab = "Skins"
-_G.Telemetry = {}
-_G.EquippedData = _G.EquippedData or {}
-for w in pairs(SkinLists) do
-    if not _G.EquippedData[w] then _G.EquippedData[w] = {Skin = "Default", Wrap = "None"} end
-end
 LoadConfig()
-print("[+] Aniha Skin Changer v4.0 starting...")
-_G.AnihaVersion = "4.0"
+print("[+] Aniha Skin Changer v5.0 loading...")
 
 -- ═══════════════════════════════════════════════
 -- PERFORMANCE FUNCTIONS
@@ -165,88 +174,180 @@ local function ApplyLowMesh(on)
     end)
 end
 
+-- ═══════════════════════════════════════════════
+-- DAMAGE COLOR  (persistent hook — won't reset)
+-- ═══════════════════════════════════════════════
 local function ApplyDamageColor(color)
     _G.PerfSettings.DamageColor = color
+    -- disconnect old hooks first
+    if _G.DamageColorConn  then _G.DamageColorConn:Disconnect()  end
+    if _G.DamageColorConn2 then _G.DamageColorConn2:Disconnect() end
     pcall(function()
-        local function tag(v)
-            if v:IsA("TextLabel") then
-                local t = v.Text or ""
-                if t:match("^%-?%d") then v.TextColor3 = color end
+        local function tagLabel(v)
+            if not v:IsA("TextLabel") then return end
+            -- hook every future text change on this label
+            if not v:GetAttribute("AnihaHooked") then
+                v:SetAttribute("AnihaHooked", true)
                 v:GetPropertyChangedSignal("Text"):Connect(function()
                     local tt = v.Text or ""
                     if tt:match("^%-?%d") then v.TextColor3 = _G.PerfSettings.DamageColor end
                 end)
             end
+            local t = v.Text or ""
+            if t:match("^%-?%d") then v.TextColor3 = color end
         end
-        for _, v in pairs(player.PlayerGui:GetDescendants()) do tag(v) end
-        if _G.DamageColorConn then _G.DamageColorConn:Disconnect() end
+        for _, v in pairs(player.PlayerGui:GetDescendants()) do tagLabel(v) end
         _G.DamageColorConn = player.PlayerGui.DescendantAdded:Connect(function(v)
-            task.defer(function() tag(v) end)
+            task.defer(function() tagLabel(v) end)
+        end)
+        -- Also hook workspace damage numbers if they live there
+        _G.DamageColorConn2 = workspace.DescendantAdded:Connect(function(v)
+            task.defer(function() tagLabel(v) end)
         end)
     end)
 end
 
 -- ═══════════════════════════════════════════════
--- HIDE NAMES & CHAT
+-- OUTLINE  (persistent hook — won't reset to red)
 -- ═══════════════════════════════════════════════
-local function ApplyHideNames(on)
+local function ApplyOutlineSettings()
+    if _G.OutlineConn  then _G.OutlineConn:Disconnect()  end
+    if _G.OutlineConn2 then _G.OutlineConn2:Disconnect() end
     pcall(function()
-        -- Hide overhead name billboards
-        for _, plr in pairs(Players:GetPlayers()) do
-            if plr ~= player then
-                local char = plr.Character
-                if char then
-                    for _, v in pairs(char:GetDescendants()) do
-                        if v:IsA("BillboardGui") then v.Enabled = not on end
-                        if v:IsA("TextLabel") and v.Parent:IsA("BillboardGui") then v.Visible = not on end
-                    end
+        local function patchOutline(v)
+            if v:IsA("SelectionBox") then
+                v.Visible = _G.OutlineSettings.Enabled
+                if _G.OutlineSettings.Enabled then
+                    v.Color3          = _G.OutlineSettings.Color
+                    v.LineThickness   = 0.05
+                    v.SurfaceTransparency = 0.85
+                    v.SurfaceColor3   = _G.OutlineSettings.Color
+                end
+                -- Keep overriding any game resets
+                if not v:GetAttribute("AnihaOutlineHooked") then
+                    v:SetAttribute("AnihaOutlineHooked", true)
+                    v:GetPropertyChangedSignal("Color3"):Connect(function()
+                        if _G.OutlineSettings.Enabled then
+                            v.Color3        = _G.OutlineSettings.Color
+                            v.SurfaceColor3 = _G.OutlineSettings.Color
+                        end
+                    end)
+                end
+            elseif v:IsA("Highlight") then
+                v.Enabled = _G.OutlineSettings.Enabled
+                if _G.OutlineSettings.Enabled then
+                    v.OutlineColor = _G.OutlineSettings.Color
+                end
+                if not v:GetAttribute("AnihaOutlineHooked") then
+                    v:SetAttribute("AnihaOutlineHooked", true)
+                    v:GetPropertyChangedSignal("OutlineColor"):Connect(function()
+                        if _G.OutlineSettings.Enabled then
+                            v.OutlineColor = _G.OutlineSettings.Color
+                        end
+                    end)
                 end
             end
         end
-        -- Also hide via PlayerGui overhead labels if present
-        local pg = player.PlayerGui
-        for _, v in pairs(pg:GetDescendants()) do
-            if v.Name == "NameGui" or v.Name == "HealthGui" or v.Name == "PlayerLabel" then
-                v.Enabled = not on
-            end
-        end
-    end)
-end
-
-local function ApplyHideChat(on)
-    pcall(function()
-        local pg = player.PlayerGui
-        -- Hide the main chat window (BubbleChat / TextChatGui)
-        for _, v in pairs(pg:GetChildren()) do
-            if v.Name == "BubbleNotifications" or v.Name == "Chat" or v.Name == "TextChatGui" then
-                v.Enabled = not on
-            end
-        end
+        for _, v in pairs(workspace:GetDescendants()) do patchOutline(v) end
+        for _, v in pairs(player.PlayerGui:GetDescendants()) do patchOutline(v) end
+        _G.OutlineConn  = workspace.DescendantAdded:Connect(function(v) task.defer(function() patchOutline(v) end) end)
+        _G.OutlineConn2 = player.PlayerGui.DescendantAdded:Connect(function(v) task.defer(function() patchOutline(v) end) end)
     end)
 end
 
 -- ═══════════════════════════════════════════════
--- WEAPON VISIBILITY (hide viewmodel)
+-- MUZZLE FLASH & VISIBLE BULLETS
 -- ═══════════════════════════════════════════════
-_G.WeaponHidden = _G.WeaponHidden or false
-local function ApplyHideWeapon(on)
-    _G.WeaponHidden = on
+local function ApplyHideMuzzle(on)
+    _G.HideMuzzle = on
+    if _G.MuzzleConn then _G.MuzzleConn:Disconnect() end
+    local function patchMuzzle(v)
+        local n = v.Name:lower()
+        if n:find("muzzle") or n:find("flash") or n:find("fire") or n:find("spark") then
+            if v:IsA("ParticleEmitter") or v:IsA("PointLight") or v:IsA("SpotLight") or v:IsA("Beam") then
+                if not v:GetAttribute("AnihaOrigEnabled") then
+                    v:SetAttribute("AnihaOrigEnabled", v.Enabled)
+                end
+                v.Enabled = not on
+            end
+        end
+    end
     pcall(function()
-        -- Try to find the local viewmodel camera container
         local cam = workspace.CurrentCamera
-        if cam then
-            for _, v in pairs(cam:GetDescendants()) do
-                if v:IsA("BasePart") or v:IsA("MeshPart") or v:IsA("SpecialMesh") then
+        if cam then for _,v in pairs(cam:GetDescendants()) do patchMuzzle(v) end end
+        local char = player.Character
+        if char then for _,v in pairs(char:GetDescendants()) do patchMuzzle(v) end end
+        _G.MuzzleConn = workspace.DescendantAdded:Connect(function(v)
+            if _G.HideMuzzle then task.defer(function() patchMuzzle(v) end) end
+        end)
+    end)
+end
+
+local function ApplyHideBullets(on)
+    _G.HideBullets = on
+    if _G.BulletConn then _G.BulletConn:Disconnect() end
+    local function patchBullet(v)
+        local n = v.Name:lower()
+        if n:find("bullet") or n:find("proj") or n:find("pellet") or n:find("ball") or n:find("tracer") or n:find("ray") then
+            if v:IsA("BasePart") or v:IsA("MeshPart") or v:IsA("Trail") or v:IsA("Beam") then
+                if v:IsA("Trail") or v:IsA("Beam") then
+                    v.Enabled = not on
+                else
                     v.LocalTransparencyModifier = on and 1 or 0
                 end
             end
         end
-        -- Also scan workspace for the local character's equipped tool model
+    end
+    pcall(function()
+        for _,v in pairs(workspace:GetDescendants()) do patchBullet(v) end
+        _G.BulletConn = workspace.DescendantAdded:Connect(function(v)
+            if _G.HideBullets then task.defer(function() patchBullet(v) end) end
+        end)
+    end)
+end
+
+-- ═══════════════════════════════════════════════
+-- HIDE RELOAD UI
+-- ═══════════════════════════════════════════════
+local function ApplyHideReload(on)
+    _G.HideReload = on
+    if _G.ReloadConn then _G.ReloadConn:Disconnect() end
+    local function patchReload(v)
+        local n = (v.Name or ""):lower()
+        if n:find("reload") or n:find("ammo") or n:find("magazine") or n:find("chamber") then
+            if v:IsA("Frame") or v:IsA("ImageLabel") or v:IsA("TextLabel") or v:IsA("ScreenGui") or v:IsA("BillboardGui") then
+                v.Visible = not on
+            end
+        end
+    end
+    pcall(function()
+        for _,v in pairs(player.PlayerGui:GetDescendants()) do patchReload(v) end
+        _G.ReloadConn = player.PlayerGui.DescendantAdded:Connect(function(v)
+            if _G.HideReload then task.defer(function() patchReload(v) end) end
+        end)
+    end)
+end
+
+-- ═══════════════════════════════════════════════
+-- WEAPON VISIBILITY
+-- ═══════════════════════════════════════════════
+_G.WeaponHidden = false
+local function ApplyHideWeapon(on)
+    _G.WeaponHidden = on
+    pcall(function()
+        local cam = workspace.CurrentCamera
+        if cam then
+            for _,v in pairs(cam:GetDescendants()) do
+                if (v:IsA("BasePart") or v:IsA("MeshPart")) then
+                    v.LocalTransparencyModifier = on and 1 or 0
+                end
+            end
+        end
         local char = player.Character
         if char then
-            for _, tool in pairs(char:GetChildren()) do
+            for _,tool in pairs(char:GetChildren()) do
                 if tool:IsA("Tool") then
-                    for _, part in pairs(tool:GetDescendants()) do
+                    for _,part in pairs(tool:GetDescendants()) do
                         if part:IsA("BasePart") or part:IsA("MeshPart") then
                             part.LocalTransparencyModifier = on and 1 or 0
                         end
@@ -257,27 +358,56 @@ local function ApplyHideWeapon(on)
     end)
 end
 
--- Keep weapon hidden state in sync when weapon changes
-RunService.Heartbeat:Connect(function()
-    if not _G.WeaponHidden then return end
+-- ═══════════════════════════════════════════════
+-- HIDE ARMS (viewmodel arms only)
+-- ═══════════════════════════════════════════════
+_G.ArmsHidden = false
+local function ApplyHideArms(on)
+    _G.ArmsHidden = on
     pcall(function()
-        local char = player.Character
-        if char then
-            for _, tool in pairs(char:GetChildren()) do
-                if tool:IsA("Tool") then
-                    for _, part in pairs(tool:GetDescendants()) do
-                        if part:IsA("BasePart") or part:IsA("MeshPart") then
-                            part.LocalTransparencyModifier = 1
-                        end
+        local cam = workspace.CurrentCamera
+        if cam then
+            for _,v in pairs(cam:GetDescendants()) do
+                if v:IsA("BasePart") or v:IsA("MeshPart") then
+                    local n = v.Name:lower()
+                    if n:find("arm") or n:find("hand") or n:find("wrist") or n:find("lower") or n:find("upper") then
+                        v.LocalTransparencyModifier = on and 1 or 0
                     end
                 end
             end
         end
-        local cam = workspace.CurrentCamera
-        if cam then
-            for _, v in pairs(cam:GetDescendants()) do
-                if v:IsA("BasePart") or v:IsA("MeshPart") then
-                    v.LocalTransparencyModifier = 1
+    end)
+end
+
+-- Heartbeat loop to keep hide states
+RunService.Heartbeat:Connect(function()
+    pcall(function()
+        local char = player.Character
+        local cam  = workspace.CurrentCamera
+        if _G.WeaponHidden then
+            if cam then
+                for _,v in pairs(cam:GetDescendants()) do
+                    if v:IsA("BasePart") or v:IsA("MeshPart") then v.LocalTransparencyModifier = 1 end
+                end
+            end
+            if char then
+                for _,tool in pairs(char:GetChildren()) do
+                    if tool:IsA("Tool") then
+                        for _,p in pairs(tool:GetDescendants()) do
+                            if p:IsA("BasePart") or p:IsA("MeshPart") then p.LocalTransparencyModifier = 1 end
+                        end
+                    end
+                end
+            end
+        elseif _G.ArmsHidden then
+            if cam then
+                for _,v in pairs(cam:GetDescendants()) do
+                    if v:IsA("BasePart") or v:IsA("MeshPart") then
+                        local n = v.Name:lower()
+                        if n:find("arm") or n:find("hand") or n:find("wrist") or n:find("lower") or n:find("upper") then
+                            v.LocalTransparencyModifier = 1
+                        end
+                    end
                 end
             end
         end
@@ -285,55 +415,128 @@ RunService.Heartbeat:Connect(function()
 end)
 
 -- ═══════════════════════════════════════════════
--- HIT OUTLINE
+-- HIDE NAMES
 -- ═══════════════════════════════════════════════
-_G.OutlineSettings = _G.OutlineSettings or {
-    Enabled = true,
-    Color = Color3.fromRGB(255, 80, 80),
-}
-
-local function ApplyOutlineSettings()
-    pcall(function()
-        -- Scan for SelectionBox or highlight objects used for hit outlines in PlayerGui/workspace
-        local function patchOutline(v)
-            if v:IsA("SelectionBox") then
-                v.Visible = _G.OutlineSettings.Enabled
-                if _G.OutlineSettings.Enabled then
-                    v.Color3 = _G.OutlineSettings.Color
-                    v.LineThickness = 0.05
-                    v.SurfaceTransparency = 0.85
-                    v.SurfaceColor3 = _G.OutlineSettings.Color
-                end
-            elseif v:IsA("Highlight") then
-                v.Enabled = _G.OutlineSettings.Enabled
-                if _G.OutlineSettings.Enabled then
-                    v.OutlineColor = _G.OutlineSettings.Color
-                end
-            end
+local function ApplyHideNames(on)
+    _G.HideNames = on
+    if _G.HideNamesConn then _G.HideNamesConn:Disconnect() end
+    local function patchChar(char)
+        if not char then return end
+        for _,v in pairs(char:GetDescendants()) do
+            if v:IsA("BillboardGui") then v.Enabled = not on end
         end
-        for _, v in pairs(workspace:GetDescendants()) do patchOutline(v) end
-        for _, v in pairs(player.PlayerGui:GetDescendants()) do patchOutline(v) end
-        if _G.OutlineConn then _G.OutlineConn:Disconnect() end
-        _G.OutlineConn = workspace.DescendantAdded:Connect(function(v)
-            task.defer(function() patchOutline(v) end)
+    end
+    pcall(function()
+        for _,plr in pairs(Players:GetPlayers()) do
+            if plr ~= player then patchChar(plr.Character) end
+            plr.CharacterAdded:Connect(function(c) if _G.HideNames then patchChar(c) end end)
+        end
+        Players.PlayerAdded:Connect(function(plr)
+            plr.CharacterAdded:Connect(function(c) if _G.HideNames then patchChar(c) end end)
         end)
+        -- suppress Roblox overhead via StarterGui flag
+        pcall(function() StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, true) end)
     end)
 end
 
 -- ═══════════════════════════════════════════════
+-- HIDE CHAT  (hides window but / still works)
+-- ═══════════════════════════════════════════════
+local chatHidden = false
+local chatFrame  = nil   -- cached reference to chat frame
+
+local function FindChatFrame()
+    -- TextChatService new UI
+    local pg = player.PlayerGui
+    for _,v in pairs(pg:GetChildren()) do
+        if v.Name == "TextChatGui" or v.Name == "Chat" or v.Name == "BubbleChat" or v.Name == "BubbleNotifications" then
+            return v
+        end
+    end
+    return nil
+end
+
+local function ApplyHideChat(on)
+    _G.HideChat = on
+    chatHidden  = on
+    pcall(function()
+        if not chatFrame then chatFrame = FindChatFrame() end
+        if chatFrame then
+            -- Hide only the display, NOT the input — we re-enable when user types /
+            -- The safest approach: hide the whole frame but intercept / key
+            -- Actually: just hide the message display children but keep input box alive
+            for _,v in pairs(chatFrame:GetDescendants()) do
+                local n = (v.Name or ""):lower()
+                -- keep input-related frames visible; hide message feed
+                local isInput = n:find("input") or n:find("box") or n:find("entry") or n:find("type") or n:find("field")
+                if not isInput then
+                    if v:IsA("Frame") or v:IsA("ScrollingFrame") or v:IsA("TextLabel") or v:IsA("ImageLabel") then
+                        if v.ClassName == "TextBox" then -- always keep textboxes
+                        else
+                            v.Visible = not on
+                        end
+                    end
+                end
+            end
+        end
+        -- CoreGui approach as fallback
+        if on then
+            pcall(function() StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, false) end)
+        else
+            pcall(function() StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, true) end)
+        end
+    end)
+end
+
+-- Intercept / key: open chat input even while hidden
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    if input.KeyCode == Enum.KeyCode.Slash and chatHidden then
+        -- Re-show chat temporarily, focus the input box
+        pcall(function()
+            if not chatFrame then chatFrame = FindChatFrame() end
+            -- Try TextChatService focus
+            local tcs = game:GetService("TextChatService")
+            if tcs and tcs.ChatVersion == Enum.ChatVersion.TextChatService then
+                local channel = tcs:FindFirstChild("TextChannels")
+                if channel then
+                    local ch = channel:FindFirstChild("RBXGeneral") or channel:GetChildren()[1]
+                    if ch and ch:IsA("TextChannel") then
+                        -- focus default chat
+                    end
+                end
+            end
+            -- show the frame just for typing
+            if chatFrame then chatFrame.Visible = true end
+            task.delay(0.1, function()
+                -- find and focus any TextBox in the chat
+                if chatFrame then
+                    for _,v in pairs(chatFrame:GetDescendants()) do
+                        if v:IsA("TextBox") then
+                            v:CaptureFocus()
+                            v.FocusLost:Wait()
+                            task.wait(0.05)
+                            if chatHidden and chatFrame then
+                                chatFrame.Visible = false
+                                ApplyHideChat(true)
+                            end
+                            break
+                        end
+                    end
+                end
+            end)
+        end)
+    end
+end)
+
+-- ═══════════════════════════════════════════════
 -- UNLOCK ALL SKINS VISUALLY
--- (patches CosmeticLibrary.IsOwned / HasSkin if present)
 -- ═══════════════════════════════════════════════
 local function PatchUnlockAll(CosmeticLibrary)
     pcall(function()
-        if CosmeticLibrary.IsOwned then
-            CosmeticLibrary.IsOwned = function() return true end
-        end
-        if CosmeticLibrary.HasSkin then
-            CosmeticLibrary.HasSkin = function() return true end
-        end
+        if CosmeticLibrary.IsOwned then CosmeticLibrary.IsOwned = function() return true end end
+        if CosmeticLibrary.HasSkin  then CosmeticLibrary.HasSkin  = function() return true end end
         if CosmeticLibrary.OwnedSkins then
-            -- inject all skins into owned list
             for wp, skins in pairs(SkinLists) do
                 for _, sk in ipairs(skins) do
                     if not table.find(CosmeticLibrary.OwnedSkins, sk) then
@@ -342,12 +545,11 @@ local function PatchUnlockAll(CosmeticLibrary)
                 end
             end
         end
-        -- Patch any Locked flags in cosmetics table
         if CosmeticLibrary.Cosmetics then
             for _, data in pairs(CosmeticLibrary.Cosmetics) do
                 if type(data) == "table" then
-                    data.Locked = false
-                    data.Owned = true
+                    data.Locked  = false
+                    data.Owned   = true
                     data.IsOwned = true
                 end
             end
@@ -357,19 +559,79 @@ end
 
 -- ═══════════════════════════════════════════════
 -- REVOLVER SKIN FIX
--- Forces the skin to reload properly on a delay
 -- ═══════════════════════════════════════════════
-local function FixRevolverSkin(CosmeticLibrary)
+local function FixRevolverSkin(CL)
     pcall(function()
         local sel = _G.EquippedData["Revolver"] and _G.EquippedData["Revolver"].Skin
         if sel and sel ~= "Default" then
             task.delay(0.5, function()
-                pcall(function() CosmeticLibrary.Equip("Revolver","Skin","Default") end)
+                pcall(function() CL.Equip("Revolver","Skin","Default") end)
                 task.delay(0.2, function()
-                    pcall(function() CosmeticLibrary.Equip("Revolver","Skin",sel) end)
+                    pcall(function() CL.Equip("Revolver","Skin",sel) end)
                 end)
             end)
         end
+    end)
+end
+
+-- ═══════════════════════════════════════════════
+-- AIM ASSIST  (soft magnet — snaps crosshair slightly)
+-- ═══════════════════════════════════════════════
+local aimAssistConn = nil
+local function SetAimAssist(on)
+    _G.AimAssist.Enabled = on
+    if aimAssistConn then aimAssistConn:Disconnect() aimAssistConn = nil end
+    if not on then return end
+    aimAssistConn = RunService.RenderStepped:Connect(function()
+        pcall(function()
+            if not _G.AimAssist.Enabled then return end
+            local cam     = workspace.CurrentCamera
+            local range   = _G.AimAssist.Range
+            local strength= _G.AimAssist.Strength
+            local mx, my  = mouse.X, mouse.Y
+            local vp      = cam.ViewportSize
+            local bestDist= range
+            local bestTarget = nil
+
+            for _, plr in pairs(Players:GetPlayers()) do
+                if plr ~= player and plr.Character then
+                    local char = plr.Character
+                    local root = char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
+                    if root then
+                        local _, onScreen = cam:WorldToViewportPoint(root.Position)
+                        if onScreen then
+                            local sPos, vis = cam:WorldToViewportPoint(root.Position)
+                            if vis then
+                                local dx = sPos.X - mx
+                                local dy = sPos.Y - my
+                                local dist = math.sqrt(dx*dx + dy*dy)
+                                if dist < bestDist then
+                                    bestDist   = dist
+                                    bestTarget = sPos
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+
+            if bestTarget then
+                -- Softly pull mouse towards target
+                local newX = mx + (bestTarget.X - mx) * strength * 0.08
+                local newY = my + (bestTarget.Y - my) * strength * 0.08
+                -- Only move if within viewport
+                if newX > 0 and newX < vp.X and newY > 0 and newY < vp.Y then
+                    pcall(function()
+                        -- Use mousemoverel if available (exploits)
+                        if mousemoverel then
+                            mousemoverel(newX - mx, newY - my)
+                        elseif mouse_moverel then
+                            mouse_moverel(newX - mx, newY - my)
+                        end
+                    end)
+                end
+            end
+        end)
     end)
 end
 
@@ -396,14 +658,14 @@ local function robust_require(module)
                 for _, v in pairs(objs) do
                     if type(v) == "table" then
                         if mName:find("CosmeticLibrary") and (v.Cosmetics or rawget(v,"Cosmetics")) and (type(v.Equip)=="function" or type(v.GetSkins)=="function") then return v end
-                        if mName:find("ItemLibrary") and (v.ViewModels or rawget(v,"ViewModels")) then return v end
+                        if mName:find("ItemLibrary")     and (v.ViewModels or rawget(v,"ViewModels")) then return v end
                         if mName:find("ClientViewModel") and (v.new or rawget(v,"new")) and (v.GetWrap or rawget(v,"GetWrap")) then return v end
                         if mName:find("ReplicatedClass") and type(v.ToEnum)=="function" then return v end
                     elseif type(v) == "function" and getupvalues then
                         for _, upv in pairs(getupvalues(v)) do
                             if type(upv)=="table" then
                                 if mName:find("CosmeticLibrary") and upv.Cosmetics and upv.Equip then return upv end
-                                if mName:find("ItemLibrary") and upv.ViewModels then return upv end
+                                if mName:find("ItemLibrary")     and upv.ViewModels then return upv end
                             end
                         end
                     end
@@ -411,12 +673,16 @@ local function robust_require(module)
             end
         end
     end
-    warn("[!] Failed: " .. mName)
+    warn("[!] Failed: "..mName)
     return nil
 end
 
+-- ═══════════════════════════════════════════════════════
+-- MAIN TASK (requires modules then builds GUI)
+-- ═══════════════════════════════════════════════════════
 task.spawn(function()
     task.wait(1.5)
+    local CosmeticLibrary, ItemLibrary, ReplicatedClass, ClientViewModel
     CosmeticLibrary = robust_require(ReplicatedStorage:WaitForChild("Modules",20):WaitForChild("CosmeticLibrary",20))
     ItemLibrary     = robust_require(ReplicatedStorage.Modules:WaitForChild("ItemLibrary",20))
     ReplicatedClass = robust_require(ReplicatedStorage.Modules:WaitForChild("ReplicatedClass",20))
@@ -428,44 +694,36 @@ task.spawn(function()
         warn("[!] Aniha: Core modules missing.") return
     end
 
-    -- Patch unlock all skins visually
     PatchUnlockAll(CosmeticLibrary)
-
-    -- Fix revolver skin on load
     FixRevolverSkin(CosmeticLibrary)
 
     local function getCosmeticData(name, cType)
         local base = CosmeticLibrary.Cosmetics[name]
         if not base then return nil end
         local data = table.clone(base)
-        data.Name = name data.Type = cType
-        data.Locked = false
-        data.Owned = true
-        data.IsOwned = true
-        if name == "AKEY-47" then data.IsMythical = true data.BundlePath = "Bundles"
-        elseif name:find("Gingerbread") then data.BundlePath = "Festive Skin Case"
-        elseif name == "Evil Trident" then data.DisplayName = "Evil Trident" end
-        -- Revolver fix: ensure correct item name matching
-        if name == "Revolver" or name == "Desert Eagle" or name == "Sheriff" or name == "Peppergun" or name == "Boneclaw Revolver" or name == "Peppermint Sheriff" then
-            data._RevolverFix = true
-            data.ItemName = "Revolver"
-        end
+        data.Name    = name  data.Type = cType
+        data.Locked  = false data.Owned = true data.IsOwned = true
+        if name == "AKEY-47"       then data.IsMythical = true data.BundlePath = "Bundles" end
+        if name:find("Gingerbread") then data.BundlePath = "Festive Skin Case" end
+        if name == "Evil Trident"  then data.DisplayName = "Evil Trident" end
         return data
     end
 
+    -- Patch GetWrap
     local oldGetWrap = ClientViewModel.GetWrap
     ClientViewModel.GetWrap = function(self)
         local ok, result = pcall(function()
             local wn = self.ClientItem and self.ClientItem.Name
             if wn and _G.EquippedData[wn] then
                 local w = _G.EquippedData[wn].Wrap
-                if w and w ~= "None" then return getCosmeticData(w, "Wrap") end
+                if w and w ~= "None" then return getCosmeticData(w,"Wrap") end
             end
         end)
         if ok and result then return result end
         return oldGetWrap(self)
     end
 
+    -- Patch new (skin injection + finisher per weapon)
     local oldNew = ClientViewModel.new
     ClientViewModel.new = function(replicatedData, clientItem)
         pcall(function()
@@ -474,20 +732,37 @@ task.spawn(function()
             if not wn or not _G.EquippedData[wn] then return end
             local cf = rawget(clientItem,"ClientFighter") or (pcall(function() return clientItem.ClientFighter end) and clientItem.ClientFighter)
             if not cf or cf.Player ~= player then return end
+            -- Skin
             local sel = _G.EquippedData[wn].Skin
-            if not sel or sel == "Default" then return end
-            local cos = getCosmeticData(sel, "Skin")
-            if not cos then return end
-            local dk = ReplicatedClass:ToEnum("Data")
-            local sk = ReplicatedClass:ToEnum("Skin")
-            local nk = ReplicatedClass:ToEnum("Name")
-            replicatedData[dk] = replicatedData[dk] or {}
-            replicatedData[dk][sk] = cos
-            replicatedData[dk][nk] = sel
+            if sel and sel ~= "Default" then
+                local cos = getCosmeticData(sel,"Skin")
+                if cos then
+                    local dk = ReplicatedClass:ToEnum("Data")
+                    local sk = ReplicatedClass:ToEnum("Skin")
+                    local nk = ReplicatedClass:ToEnum("Name")
+                    replicatedData[dk] = replicatedData[dk] or {}
+                    replicatedData[dk][sk] = cos
+                    replicatedData[dk][nk] = sel
+                end
+            end
+            -- Finisher (per weapon)
+            local fin = _G.EquippedData[wn].Finisher
+            if fin and fin ~= "None" then
+                pcall(function()
+                    local finCos = getCosmeticData(fin,"Finisher")
+                    if finCos then
+                        local dk  = ReplicatedClass:ToEnum("Data")
+                        local fk  = ReplicatedClass:ToEnum("Finisher")
+                        replicatedData[dk] = replicatedData[dk] or {}
+                        replicatedData[dk][fk] = finCos
+                        -- Also try direct equip
+                        CosmeticLibrary.Equip(wn,"Finisher",fin)
+                    end
+                end)
+            end
         end)
         local vm = oldNew(replicatedData, clientItem)
         task.delay(0.1, function() pcall(function() if vm and vm._UpdateWrap then vm:_UpdateWrap() end end) end)
-        -- Revolver: extra delay re-equip to fix display bug
         pcall(function()
             if clientItem and clientItem.Name == "Revolver" then
                 task.delay(0.3, function() FixRevolverSkin(CosmeticLibrary) end)
@@ -498,7 +773,8 @@ task.spawn(function()
 
     local function ApplyAllSkins()
         for w, info in pairs(_G.EquippedData) do
-            if info.Skin ~= "Default" then pcall(function() CosmeticLibrary.Equip(w,"Skin",info.Skin) end) end
+            if info.Skin ~= "Default"   then pcall(function() CosmeticLibrary.Equip(w,"Skin",info.Skin) end) end
+            if info.Finisher ~= "None"  then pcall(function() CosmeticLibrary.Equip(w,"Finisher",info.Finisher) end) end
         end
     end
 
@@ -518,934 +794,712 @@ task.spawn(function()
         return r
     end
 
-    -- ═══════════════════════════════════════════════
-    -- COLOR CONSTANTS
-    -- ═══════════════════════════════════════════════
+    -- ════════════════════════════════════════════
+    -- COLORS
+    -- ════════════════════════════════════════════
     local C = {
-        BG       = Color3.fromRGB(10, 10, 14),
-        PANEL    = Color3.fromRGB(16, 16, 22),
-        CARD     = Color3.fromRGB(24, 24, 32),
-        CARD2    = Color3.fromRGB(30, 30, 42),
-        SEL      = Color3.fromRGB(50, 100, 210),
-        EQUIP    = Color3.fromRGB(38, 155, 85),
-        RED      = Color3.fromRGB(220, 50, 50),
-        RED2     = Color3.fromRGB(180, 35, 35),
-        BLUE     = Color3.fromRGB(55, 100, 215),
-        GOLD     = Color3.fromRGB(220, 170, 30),
-        TEXT     = Color3.fromRGB(225, 225, 232),
-        DIM      = Color3.fromRGB(110, 110, 128),
-        SEP      = Color3.fromRGB(35, 35, 50),
-        TOG_ON   = Color3.fromRGB(38, 175, 90),
-        TOG_OFF  = Color3.fromRGB(38, 38, 54),
-        PURPLE   = Color3.fromRGB(130, 60, 220),
-        CYAN     = Color3.fromRGB(30, 190, 220),
+        BG     = Color3.fromRGB(10, 10, 14),
+        PANEL  = Color3.fromRGB(16, 16, 22),
+        CARD   = Color3.fromRGB(24, 24, 32),
+        SEL    = Color3.fromRGB(50, 100, 210),
+        EQUIP  = Color3.fromRGB(38, 155, 85),
+        RED    = Color3.fromRGB(220, 50, 50),
+        BLUE   = Color3.fromRGB(55, 100, 215),
+        GOLD   = Color3.fromRGB(220, 170, 30),
+        TEXT   = Color3.fromRGB(225, 225, 232),
+        DIM    = Color3.fromRGB(110, 110, 128),
+        SEP    = Color3.fromRGB(35, 35, 50),
+        TOG_ON = Color3.fromRGB(38, 175, 90),
+        TOG_OFF= Color3.fromRGB(38, 38, 54),
+        PURPLE = Color3.fromRGB(130, 60, 220),
+        CYAN   = Color3.fromRGB(30, 190, 220),
+        ORANGE = Color3.fromRGB(220, 120, 30),
     }
 
-    local function Rnd(p, r) local c = Instance.new("UICorner",p) c.CornerRadius = UDim.new(0,r or 6) end
-    local function Str(p, c, t) local s = Instance.new("UIStroke",p) s.Color = c s.Thickness = t return s end
-    local function Pad(p,t,b,l,r) local u = Instance.new("UIPadding",p) u.PaddingTop=UDim.new(0,t) u.PaddingBottom=UDim.new(0,b) u.PaddingLeft=UDim.new(0,l) u.PaddingRight=UDim.new(0,r) end
+    local function Rnd(p,r) local c=Instance.new("UICorner",p) c.CornerRadius=UDim.new(0,r or 6) end
+    local function Str(p,c,t) local s=Instance.new("UIStroke",p) s.Color=c s.Thickness=t return s end
+    local function Pad(p,t,b,l,r) local u=Instance.new("UIPadding",p) u.PaddingTop=UDim.new(0,t) u.PaddingBottom=UDim.new(0,b) u.PaddingLeft=UDim.new(0,l) u.PaddingRight=UDim.new(0,r) end
 
-    -- ═══════════════════════════════════════════════
+    -- ════════════════════════════════════════════
     -- SCREEN GUI
-    -- ═══════════════════════════════════════════════
+    -- ════════════════════════════════════════════
     local SG = Instance.new("ScreenGui", player.PlayerGui)
-    SG.ResetOnSpawn = false
-    SG.Name = "AnihaSkinChanger"
+    SG.ResetOnSpawn = false  SG.Name = "AnihaSkinChanger"
     SG.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
     local Main = Instance.new("Frame", SG)
-    Main.Size = UDim2.new(0, 1020, 0, 720)
-    Main.Position = UDim2.new(0.5, -510, 0.5, -360)
-    Main.BackgroundColor3 = C.BG
-    Main.BorderSizePixel = 0
-    Main.Active = false
-    Rnd(Main, 12)
-    Str(Main, Color3.fromRGB(50,50,70), 1.5)
-
-    -- GRADIENT background accent
-    local BGGrad = Instance.new("UIGradient", Main)
-    BGGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(14,12,22)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(10,10,14)),
+    Main.Size = UDim2.new(0,1060,0,740)
+    Main.Position = UDim2.new(0.5,-530,0.5,-370)
+    Main.BackgroundColor3 = C.BG  Main.BorderSizePixel = 0
+    Rnd(Main,12)  Str(Main,Color3.fromRGB(50,50,70),1.5)
+    Instance.new("UIGradient",Main).Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0,Color3.fromRGB(14,12,22)),
+        ColorSequenceKeypoint.new(1,Color3.fromRGB(10,10,14)),
     })
-    BGGrad.Rotation = 135
 
-    -- TITLE BAR
-    local TB = Instance.new("Frame", Main)
-    TB.Size = UDim2.new(1, 0, 0, 50)
-    TB.BackgroundColor3 = Color3.fromRGB(15, 10, 22)
-    TB.BorderSizePixel = 0
-    TB.ZIndex = 5
-    Rnd(TB, 0)
+    -- TITLE
+    local TB = Instance.new("Frame",Main)
+    TB.Size=UDim2.new(1,0,0,50) TB.BackgroundColor3=Color3.fromRGB(15,10,22) TB.BorderSizePixel=0 TB.ZIndex=5
+    local TBG = Instance.new("UIGradient",TB)
+    TBG.Color = ColorSequence.new({ColorSequenceKeypoint.new(0,Color3.fromRGB(160,30,30)),ColorSequenceKeypoint.new(0.5,Color3.fromRGB(18,12,30)),ColorSequenceKeypoint.new(1,Color3.fromRGB(15,10,22))})
+    TBG.Rotation = 90
+    local TL = Instance.new("TextLabel",TB)
+    TL.Size=UDim2.new(1,-150,1,0) TL.Position=UDim2.new(0,18,0,0) TL.BackgroundTransparency=1
+    TL.Text="✦  ANIHA SKIN CHANGER  v5.0" TL.TextColor3=Color3.new(1,1,1)
+    TL.Font=Enum.Font.GothamBlack TL.TextSize=18 TL.TextXAlignment=Enum.TextXAlignment.Left TL.ZIndex=5
+    local TLSub = Instance.new("TextLabel",TB)
+    TLSub.Size=UDim2.new(0,200,1,0) TLSub.Position=UDim2.new(1,-210,0,0) TLSub.BackgroundTransparency=1
+    TLSub.Text="[ K ] Toggle  •  [ / ] Chat" TLSub.TextColor3=Color3.fromRGB(180,100,100)
+    TLSub.Font=Enum.Font.GothamBold TLSub.TextSize=12 TLSub.TextXAlignment=Enum.TextXAlignment.Right TLSub.ZIndex=5
 
-    local TBGrad = Instance.new("UIGradient", TB)
-    TBGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(160,30,30)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(18,12,30)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(15,10,22)),
-    })
-    TBGrad.Rotation = 90
-
-    local TL = Instance.new("TextLabel", TB)
-    TL.Size = UDim2.new(1, -150, 1, 0)
-    TL.Position = UDim2.new(0, 18, 0, 0)
-    TL.BackgroundTransparency = 1
-    TL.Text = "✦  ANIHA SKIN CHANGER  v4.0"
-    TL.TextColor3 = Color3.new(1,1,1)
-    TL.Font = Enum.Font.GothamBlack
-    TL.TextSize = 18
-    TL.TextXAlignment = Enum.TextXAlignment.Left
-    TL.ZIndex = 5
-
-    local TLSub = Instance.new("TextLabel", TB)
-    TLSub.Size = UDim2.new(0, 200, 1, 0)
-    TLSub.Position = UDim2.new(1, -210, 0, 0)
-    TLSub.BackgroundTransparency = 1
-    TLSub.Text = "[ K ]  Toggle"
-    TLSub.TextColor3 = Color3.fromRGB(180, 100, 100)
-    TLSub.Font = Enum.Font.GothamBold
-    TLSub.TextSize = 13
-    TLSub.TextXAlignment = Enum.TextXAlignment.Right
-    TLSub.ZIndex = 5
-
-    -- ACCENT LINE under title
-    local AccentLine = Instance.new("Frame", Main)
-    AccentLine.Size = UDim2.new(1, 0, 0, 2)
-    AccentLine.Position = UDim2.new(0, 0, 0, 50)
-    AccentLine.BorderSizePixel = 0
-    local AL_Grad = Instance.new("UIGradient", AccentLine)
-    AL_Grad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(220,40,40)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(160,60,220)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(30,120,220)),
-    })
+    -- ACCENT LINE
+    local AL = Instance.new("Frame",Main)
+    AL.Size=UDim2.new(1,0,0,2) AL.Position=UDim2.new(0,0,0,50) AL.BorderSizePixel=0
+    Instance.new("UIGradient",AL).Color=ColorSequence.new({ColorSequenceKeypoint.new(0,Color3.fromRGB(220,40,40)),ColorSequenceKeypoint.new(0.5,Color3.fromRGB(160,60,220)),ColorSequenceKeypoint.new(1,Color3.fromRGB(30,120,220))})
 
     -- TAB BAR
-    local TabBar = Instance.new("Frame", Main)
-    TabBar.Size = UDim2.new(1, 0, 0, 42)
-    TabBar.Position = UDim2.new(0, 0, 0, 52)
-    TabBar.BackgroundColor3 = Color3.fromRGB(13, 13, 18)
-    TabBar.BorderSizePixel = 0
-
-    local TabLL = Instance.new("UIListLayout", TabBar)
-    TabLL.FillDirection = Enum.FillDirection.Horizontal
-    TabLL.Padding = UDim.new(0, 5)
-    TabLL.VerticalAlignment = Enum.VerticalAlignment.Center
-    Pad(TabBar, 5, 5, 12, 12)
+    local TabBar = Instance.new("Frame",Main)
+    TabBar.Size=UDim2.new(1,0,0,42) TabBar.Position=UDim2.new(0,0,0,52)
+    TabBar.BackgroundColor3=Color3.fromRGB(13,13,18) TabBar.BorderSizePixel=0
+    local TabLL=Instance.new("UIListLayout",TabBar) TabLL.FillDirection=Enum.FillDirection.Horizontal
+    TabLL.Padding=UDim.new(0,4) TabLL.VerticalAlignment=Enum.VerticalAlignment.Center
+    Pad(TabBar,5,5,10,10)
 
     local tabs = {}
-    local function MakeTabBtn(icon, lbl, key)
-        local b = Instance.new("TextButton", TabBar)
-        b.Size = UDim2.new(0, 148, 1, 0)
-        b.BackgroundColor3 = C.CARD
-        b.Text = icon .. "  " .. lbl
-        b.TextColor3 = C.DIM
-        b.Font = Enum.Font.GothamBold
-        b.TextSize = 13
-        b.BorderSizePixel = 0
-        b.AutoButtonColor = false
-        Rnd(b, 6)
-        tabs[key] = b
-        return b
+    local function MakeTabBtn(icon,lbl,key)
+        local b=Instance.new("TextButton",TabBar)
+        b.Size=UDim2.new(0,140,1,0) b.BackgroundColor3=C.CARD
+        b.Text=icon.."  "..lbl b.TextColor3=C.DIM
+        b.Font=Enum.Font.GothamBold b.TextSize=12
+        b.BorderSizePixel=0 b.AutoButtonColor=false
+        Rnd(b,6) tabs[key]=b return b
     end
-    local SkinsTabBtn    = MakeTabBtn("🎨", "Skins",         "Skins")
-    local WrapsTabBtn    = MakeTabBtn("🎁", "Wraps",         "Wraps")
-    local PerfTabBtn     = MakeTabBtn("⚡", "Performance",   "Performance")
-    local FinisherTabBtn = MakeTabBtn("💀", "Kill Finishers","Finishers")
+    local SkinsTab    = MakeTabBtn("🎨","Skins",      "Skins")
+    local WrapsTab    = MakeTabBtn("🎁","Wraps",       "Wraps")
+    local PerfTab     = MakeTabBtn("⚡","Performance",  "Performance")
+    local FinTab      = MakeTabBtn("💀","Kill Finishers","Finishers")
+    local AimTab      = MakeTabBtn("🎯","Aim Assist",   "AimAssist")
 
     local function SetTab(name)
-        _G.ActiveTab = name
-        for k, b in pairs(tabs) do
-            if k == name then
-                b.BackgroundColor3 = C.RED b.TextColor3 = Color3.new(1,1,1)
-                local s = Str(b, C.RED, 0)
-                s.Thickness = 0
-            else
-                b.BackgroundColor3 = C.CARD b.TextColor3 = C.DIM
-            end
+        _G.ActiveTab=name
+        for k,b in pairs(tabs) do
+            if k==name then b.BackgroundColor3=C.RED b.TextColor3=Color3.new(1,1,1)
+            else             b.BackgroundColor3=C.CARD b.TextColor3=C.DIM end
         end
     end
     SetTab("Skins")
 
     -- TOOLBAR
-    local Toolbar = Instance.new("Frame", Main)
-    Toolbar.Size = UDim2.new(1, 0, 0, 44)
-    Toolbar.Position = UDim2.new(0, 0, 1, -44)
-    Toolbar.BackgroundColor3 = Color3.fromRGB(13, 13, 18)
-    Toolbar.BorderSizePixel = 0
+    local Toolbar=Instance.new("Frame",Main)
+    Toolbar.Size=UDim2.new(1,0,0,44) Toolbar.Position=UDim2.new(0,0,1,-44)
+    Toolbar.BackgroundColor3=Color3.fromRGB(13,13,18) Toolbar.BorderSizePixel=0
+    local StatusLbl=Instance.new("TextLabel",Toolbar)
+    StatusLbl.Size=UDim2.new(1,-312,1,0) StatusLbl.Position=UDim2.new(0,14,0,0)
+    StatusLbl.BackgroundTransparency=1 StatusLbl.Text="Ready  •  v5.0"
+    StatusLbl.TextColor3=C.DIM StatusLbl.Font=Enum.Font.Gotham StatusLbl.TextSize=12
+    StatusLbl.TextXAlignment=Enum.TextXAlignment.Left
 
-    local StatusLbl = Instance.new("TextLabel", Toolbar)
-    StatusLbl.Size = UDim2.new(1, -312, 1, 0)
-    StatusLbl.Position = UDim2.new(0, 14, 0, 0)
-    StatusLbl.BackgroundTransparency = 1
-    StatusLbl.Text = "Ready  •  AnihaSkinConfig.json"
-    StatusLbl.TextColor3 = C.DIM
-    StatusLbl.Font = Enum.Font.Gotham
-    StatusLbl.TextSize = 12
-    StatusLbl.TextXAlignment = Enum.TextXAlignment.Left
-
-    local function TBtn(txt, xOff, color)
-        local b = Instance.new("TextButton", Toolbar)
-        b.Size = UDim2.new(0, 142, 0, 30)
-        b.Position = UDim2.new(1, xOff, 0.5, -15)
-        b.BackgroundColor3 = color
-        b.Text = txt
-        b.TextColor3 = Color3.new(1,1,1)
-        b.Font = Enum.Font.GothamBold
-        b.TextSize = 13
-        b.BorderSizePixel = 0
-        b.AutoButtonColor = false
-        Rnd(b, 6)
-        return b
+    local function TBtn(txt,xOff,color)
+        local b=Instance.new("TextButton",Toolbar)
+        b.Size=UDim2.new(0,142,0,30) b.Position=UDim2.new(1,xOff,0.5,-15)
+        b.BackgroundColor3=color b.Text=txt b.TextColor3=Color3.new(1,1,1)
+        b.Font=Enum.Font.GothamBold b.TextSize=13 b.BorderSizePixel=0 b.AutoButtonColor=false
+        Rnd(b,6) return b
     end
-    local SaveBtn = TBtn("💾  Save Config", -300, Color3.fromRGB(35, 110, 52))
-    local LoadBtn = TBtn("📂  Load Config", -150, Color3.fromRGB(42, 80, 160))
+    local SaveBtn=TBtn("💾  Save Config",-300,Color3.fromRGB(35,110,52))
+    local LoadBtn=TBtn("📂  Load Config",-150,Color3.fromRGB(42,80,160))
 
-    local function Flash(msg, color)
-        StatusLbl.Text = msg StatusLbl.TextColor3 = color or Color3.fromRGB(90,215,110)
-        task.delay(3, function() StatusLbl.Text = "Ready  •  AnihaSkinConfig.json" StatusLbl.TextColor3 = C.DIM end)
+    local function Flash(msg,color)
+        StatusLbl.Text=msg StatusLbl.TextColor3=color or Color3.fromRGB(90,215,110)
+        task.delay(3,function() StatusLbl.Text="Ready  •  v5.0" StatusLbl.TextColor3=C.DIM end)
     end
-    SaveBtn.MouseButton1Click:Connect(function() if SaveConfig() then Flash("✅ Saved!",Color3.fromRGB(90,215,110)) else Flash("❌ Failed!",Color3.fromRGB(215,70,70)) end end)
-    LoadBtn.MouseButton1Click:Connect(function() if LoadConfig() then Flash("✅ Loaded!",Color3.fromRGB(90,180,255)) ApplyAllSkins() else Flash("❌ No config!",Color3.fromRGB(215,70,70)) end end)
+    SaveBtn.MouseButton1Click:Connect(function() if SaveConfig() then Flash("✅ Saved!",Color3.fromRGB(90,215,110)) else Flash("❌ Failed!",C.RED) end end)
+    LoadBtn.MouseButton1Click:Connect(function() if LoadConfig() then Flash("✅ Loaded!",Color3.fromRGB(90,180,255)) ApplyAllSkins() else Flash("❌ No config!",C.RED) end end)
 
     -- CONTENT BOUNDS
-    local CY = 50 + 2 + 42  -- below title + line + tabs
-    local CH = 720 - CY - 44 -- minus toolbar
+    local CY     = 50+2+42
+    local CH     = 740-CY-44
     local MARGIN = 8
 
-    -- LEFT PANEL (weapon list) – hidden on Perf/Finisher tab
-    local LeftPanel = Instance.new("Frame", Main)
-    LeftPanel.Size = UDim2.new(0, 262, 0, CH - MARGIN*2)
-    LeftPanel.Position = UDim2.new(0, MARGIN, 0, CY + MARGIN)
-    LeftPanel.BackgroundColor3 = C.PANEL
-    LeftPanel.BorderSizePixel = 0
-    Rnd(LeftPanel, 8)
-    Str(LeftPanel, C.SEP, 1)
+    -- LEFT PANEL
+    local LeftPanel=Instance.new("Frame",Main)
+    LeftPanel.Size=UDim2.new(0,262,0,CH-MARGIN*2)
+    LeftPanel.Position=UDim2.new(0,MARGIN,0,CY+MARGIN)
+    LeftPanel.BackgroundColor3=C.PANEL LeftPanel.BorderSizePixel=0
+    Rnd(LeftPanel,8) Str(LeftPanel,C.SEP,1)
 
-    local SearchBox = Instance.new("TextBox", LeftPanel)
-    SearchBox.Size = UDim2.new(1, -16, 0, 34)
-    SearchBox.Position = UDim2.new(0, 8, 0, 8)
-    SearchBox.BackgroundColor3 = C.CARD
-    SearchBox.PlaceholderText = "🔍  Search weapon..."
-    SearchBox.PlaceholderColor3 = C.DIM
-    SearchBox.Text = ""
-    SearchBox.TextColor3 = C.TEXT
-    SearchBox.Font = Enum.Font.Gotham
-    SearchBox.TextSize = 13
-    SearchBox.BorderSizePixel = 0
-    SearchBox.ClearTextOnFocus = false
-    Rnd(SearchBox, 6)
-    Pad(SearchBox, 0, 0, 8, 8)
-    Str(SearchBox, C.SEP, 1)
+    local SearchBox=Instance.new("TextBox",LeftPanel)
+    SearchBox.Size=UDim2.new(1,-16,0,34) SearchBox.Position=UDim2.new(0,8,0,8)
+    SearchBox.BackgroundColor3=C.CARD SearchBox.PlaceholderText="🔍  Search weapon..."
+    SearchBox.PlaceholderColor3=C.DIM SearchBox.Text=""
+    SearchBox.TextColor3=C.TEXT SearchBox.Font=Enum.Font.Gotham SearchBox.TextSize=13
+    SearchBox.BorderSizePixel=0 SearchBox.ClearTextOnFocus=false
+    Rnd(SearchBox,6) Str(SearchBox,C.SEP,1) Pad(SearchBox,0,0,8,8)
 
-    local WScroll = Instance.new("ScrollingFrame", LeftPanel)
-    WScroll.Size = UDim2.new(1, -16, 1, -52)
-    WScroll.Position = UDim2.new(0, 8, 0, 50)
-    WScroll.BackgroundTransparency = 1
-    WScroll.ScrollBarThickness = 3
-    WScroll.ScrollBarImageColor3 = C.RED
-    WScroll.BorderSizePixel = 0
-    WScroll.CanvasSize = UDim2.new(0,0,0,0)
-
-    local WLayout = Instance.new("UIListLayout", WScroll)
-    WLayout.Padding = UDim.new(0, 4)
-    WLayout.SortOrder = Enum.SortOrder.Name
+    local WScroll=Instance.new("ScrollingFrame",LeftPanel)
+    WScroll.Size=UDim2.new(1,-16,1,-52) WScroll.Position=UDim2.new(0,8,0,50)
+    WScroll.BackgroundTransparency=1 WScroll.ScrollBarThickness=3
+    WScroll.ScrollBarImageColor3=C.RED WScroll.BorderSizePixel=0
+    local WLayout=Instance.new("UIListLayout",WScroll)
+    WLayout.Padding=UDim.new(0,4) WLayout.SortOrder=Enum.SortOrder.Name
 
     -- RIGHT PANEL
-    local RightPanel = Instance.new("Frame", Main)
-    RightPanel.Size = UDim2.new(1, -(262+MARGIN*3), 0, CH - MARGIN*2)
-    RightPanel.Position = UDim2.new(0, 262+MARGIN*2, 0, CY + MARGIN)
-    RightPanel.BackgroundColor3 = C.PANEL
-    RightPanel.BorderSizePixel = 0
-    Rnd(RightPanel, 8)
-    Str(RightPanel, C.SEP, 1)
+    local RightPanel=Instance.new("Frame",Main)
+    RightPanel.Size=UDim2.new(1,-(262+MARGIN*3),0,CH-MARGIN*2)
+    RightPanel.Position=UDim2.new(0,262+MARGIN*2,0,CY+MARGIN)
+    RightPanel.BackgroundColor3=C.PANEL RightPanel.BorderSizePixel=0
+    Rnd(RightPanel,8) Str(RightPanel,C.SEP,1)
 
-    local SelLbl = Instance.new("TextLabel", RightPanel)
-    SelLbl.Size = UDim2.new(1, -16, 0, 36)
-    SelLbl.Position = UDim2.new(0, 12, 0, 6)
-    SelLbl.BackgroundTransparency = 1
-    SelLbl.Text = "Select a weapon from the left"
-    SelLbl.TextColor3 = C.TEXT
-    SelLbl.Font = Enum.Font.GothamBold
-    SelLbl.TextSize = 17
-    SelLbl.TextXAlignment = Enum.TextXAlignment.Left
+    local SelLbl=Instance.new("TextLabel",RightPanel)
+    SelLbl.Size=UDim2.new(1,-16,0,36) SelLbl.Position=UDim2.new(0,12,0,6)
+    SelLbl.BackgroundTransparency=1 SelLbl.Text="Select a weapon from the left"
+    SelLbl.TextColor3=C.TEXT SelLbl.Font=Enum.Font.GothamBold SelLbl.TextSize=17
+    SelLbl.TextXAlignment=Enum.TextXAlignment.Left
 
-    local Sep = Instance.new("Frame", RightPanel)
-    Sep.Size = UDim2.new(1, -16, 0, 1)
-    Sep.Position = UDim2.new(0, 8, 0, 44)
-    Sep.BackgroundColor3 = C.SEP
-    Sep.BorderSizePixel = 0
+    local Sep=Instance.new("Frame",RightPanel)
+    Sep.Size=UDim2.new(1,-16,0,1) Sep.Position=UDim2.new(0,8,0,44)
+    Sep.BackgroundColor3=C.SEP Sep.BorderSizePixel=0
 
     -- SKIN GRID
-    local SkinScroll = Instance.new("ScrollingFrame", RightPanel)
-    SkinScroll.Size = UDim2.new(1, -16, 1, -54)
-    SkinScroll.Position = UDim2.new(0, 8, 0, 50)
-    SkinScroll.BackgroundTransparency = 1
-    SkinScroll.ScrollBarThickness = 3
-    SkinScroll.ScrollBarImageColor3 = C.RED
-    SkinScroll.BorderSizePixel = 0
-    SkinScroll.Visible = true
-
-    local SkinGrid = Instance.new("UIGridLayout", SkinScroll)
-    SkinGrid.CellSize = UDim2.new(0, 126, 0, 150)
-    SkinGrid.CellPadding = UDim2.new(0, 8, 0, 8)
+    local SkinScroll=Instance.new("ScrollingFrame",RightPanel)
+    SkinScroll.Size=UDim2.new(1,-16,1,-54) SkinScroll.Position=UDim2.new(0,8,0,50)
+    SkinScroll.BackgroundTransparency=1 SkinScroll.ScrollBarThickness=3
+    SkinScroll.ScrollBarImageColor3=C.RED SkinScroll.BorderSizePixel=0 SkinScroll.Visible=true
+    local SkinGrid=Instance.new("UIGridLayout",SkinScroll)
+    SkinGrid.CellSize=UDim2.new(0,126,0,150) SkinGrid.CellPadding=UDim2.new(0,8,0,8)
 
     -- WRAP GRID
-    local WrapScroll = Instance.new("ScrollingFrame", RightPanel)
-    WrapScroll.Size = UDim2.new(1, -16, 1, -54)
-    WrapScroll.Position = UDim2.new(0, 8, 0, 50)
-    WrapScroll.BackgroundTransparency = 1
-    WrapScroll.ScrollBarThickness = 3
-    WrapScroll.ScrollBarImageColor3 = C.BLUE
-    WrapScroll.BorderSizePixel = 0
-    WrapScroll.Visible = false
+    local WrapScroll=Instance.new("ScrollingFrame",RightPanel)
+    WrapScroll.Size=UDim2.new(1,-16,1,-54) WrapScroll.Position=UDim2.new(0,8,0,50)
+    WrapScroll.BackgroundTransparency=1 WrapScroll.ScrollBarThickness=3
+    WrapScroll.ScrollBarImageColor3=C.BLUE WrapScroll.BorderSizePixel=0 WrapScroll.Visible=false
+    local WrapGrid=Instance.new("UIGridLayout",WrapScroll)
+    WrapGrid.CellSize=UDim2.new(0,175,0,38) WrapGrid.CellPadding=UDim2.new(0,8,0,6)
+    WrapGrid.SortOrder=Enum.SortOrder.LayoutOrder
 
-    local WrapGrid = Instance.new("UIGridLayout", WrapScroll)
-    WrapGrid.CellSize = UDim2.new(0, 175, 0, 38)
-    WrapGrid.CellPadding = UDim2.new(0, 8, 0, 6)
-    WrapGrid.SortOrder = Enum.SortOrder.LayoutOrder
-
-    -- ═══════════════════════════════════════════════
-    -- PERF PANEL (full-width)
-    -- ═══════════════════════════════════════════════
-    local PerfScroll = Instance.new("ScrollingFrame", RightPanel)
-    PerfScroll.Size = UDim2.new(1, -16, 1, -54)
-    PerfScroll.Position = UDim2.new(0, 8, 0, 50)
-    PerfScroll.BackgroundTransparency = 1
-    PerfScroll.ScrollBarThickness = 3
-    PerfScroll.ScrollBarImageColor3 = C.RED
-    PerfScroll.BorderSizePixel = 0
-    PerfScroll.Visible = false
-    PerfScroll.CanvasSize = UDim2.new(0,0,0,900)
-
-    local PerfLL = Instance.new("UIListLayout", PerfScroll)
-    PerfLL.Padding = UDim.new(0, 8)
-    PerfLL.SortOrder = Enum.SortOrder.LayoutOrder
-
-    -- ═══════════════════════════════════════════════
-    -- FINISHER PANEL
-    -- ═══════════════════════════════════════════════
-    local FinisherScroll = Instance.new("ScrollingFrame", RightPanel)
-    FinisherScroll.Size = UDim2.new(1, -16, 1, -54)
-    FinisherScroll.Position = UDim2.new(0, 8, 0, 50)
-    FinisherScroll.BackgroundTransparency = 1
-    FinisherScroll.ScrollBarThickness = 3
-    FinisherScroll.ScrollBarImageColor3 = C.RED
-    FinisherScroll.BorderSizePixel = 0
-    FinisherScroll.Visible = false
-    FinisherScroll.CanvasSize = UDim2.new(0,0,0,0)
-
-    local FinisherGrid = Instance.new("UIGridLayout", FinisherScroll)
-    FinisherGrid.CellSize = UDim2.new(0, 175, 0, 54)
-    FinisherGrid.CellPadding = UDim2.new(0, 8, 0, 8)
-    FinisherGrid.SortOrder = Enum.SortOrder.LayoutOrder
-
-    -- Populate finishers
-    local equippedFinisher = "None"
-    local finisherBtns = {}
-
-    -- "None" button first
-    local noneFinBtn = Instance.new("TextButton")
-    noneFinBtn.Size = UDim2.new(0,175,0,54)
-    noneFinBtn.BackgroundColor3 = C.EQUIP
-    noneFinBtn.Text = "🚫  None"
-    noneFinBtn.TextColor3 = C.TEXT
-    noneFinBtn.Font = Enum.Font.GothamBold
-    noneFinBtn.TextSize = 13
-    noneFinBtn.BorderSizePixel = 0
-    noneFinBtn.LayoutOrder = 0
-    noneFinBtn.AutoButtonColor = false
-    noneFinBtn.Parent = FinisherScroll
-    Rnd(noneFinBtn, 7)
-    Str(noneFinBtn, C.EQUIP, 1.5)
-    finisherBtns["None"] = noneFinBtn
-
-    for i, fin in ipairs(FinisherList) do
-        local fb = Instance.new("TextButton")
-        fb.Size = UDim2.new(0,175,0,54)
-        fb.BackgroundColor3 = C.CARD
-        fb.BorderSizePixel = 0
-        fb.AutoButtonColor = false
-        fb.LayoutOrder = i
-        fb.Text = ""
-        fb.Parent = FinisherScroll
-        Rnd(fb, 7)
-        Str(fb, C.SEP, 1)
-        finisherBtns[fin] = fb
-
-        -- Skull icon
-        local icon = Instance.new("TextLabel", fb)
-        icon.Size = UDim2.new(0, 30, 1, 0)
-        icon.Position = UDim2.new(0, 8, 0, 0)
-        icon.BackgroundTransparency = 1
-        icon.Text = "💀"
-        icon.TextSize = 18
-        icon.Font = Enum.Font.GothamBold
-
-        local lbl = Instance.new("TextLabel", fb)
-        lbl.Size = UDim2.new(1, -44, 1, 0)
-        lbl.Position = UDim2.new(0, 40, 0, 0)
-        lbl.BackgroundTransparency = 1
-        lbl.Text = fin
-        lbl.TextColor3 = C.TEXT
-        lbl.Font = Enum.Font.GothamSemibold
-        lbl.TextSize = 12
-        lbl.TextWrapped = true
-        lbl.TextXAlignment = Enum.TextXAlignment.Left
-
-        -- Unlocked badge
-        local badge = Instance.new("TextLabel", fb)
-        badge.Size = UDim2.new(0, 52, 0, 14)
-        badge.Position = UDim2.new(1, -58, 0, 4)
-        badge.BackgroundColor3 = C.EQUIP
-        badge.TextColor3 = Color3.new(1,1,1)
-        badge.Font = Enum.Font.GothamBold
-        badge.TextSize = 8
-        badge.Text = "OWNED"
-        badge.BorderSizePixel = 0
-        Rnd(badge, 4)
-
-        fb.MouseButton1Click:Connect(function()
-            for _, b in pairs(finisherBtns) do
-                b.BackgroundColor3 = C.CARD
-                pcall(function() Str(b, C.SEP, 1) end)
-            end
-            fb.BackgroundColor3 = Color3.fromRGB(90,30,30)
-            equippedFinisher = fin
-            pcall(function() CosmeticLibrary.Equip("Finisher", "Finisher", fin) end)
-            SelLbl.Text = "💀  Equipped: " .. fin
-            Flash("💀 Finisher: " .. fin, C.RED)
-        end)
-    end
-
-    noneFinBtn.MouseButton1Click:Connect(function()
-        for _, b in pairs(finisherBtns) do b.BackgroundColor3 = C.CARD end
-        noneFinBtn.BackgroundColor3 = C.EQUIP
-        equippedFinisher = "None"
-        pcall(function() CosmeticLibrary.Equip("Finisher","Finisher","None") end)
-        SelLbl.Text = "💀  Kill Finishers  —  None"
+    -- ════════════════════════════════════════════
+    -- PERF PANEL
+    -- ════════════════════════════════════════════
+    local PerfScroll=Instance.new("ScrollingFrame",RightPanel)
+    PerfScroll.Size=UDim2.new(1,-16,1,-54) PerfScroll.Position=UDim2.new(0,8,0,50)
+    PerfScroll.BackgroundTransparency=1 PerfScroll.ScrollBarThickness=3
+    PerfScroll.ScrollBarImageColor3=C.RED PerfScroll.BorderSizePixel=0 PerfScroll.Visible=false
+    local PerfLL=Instance.new("UIListLayout",PerfScroll)
+    PerfLL.Padding=UDim.new(0,8) PerfLL.SortOrder=Enum.SortOrder.LayoutOrder
+    PerfLL:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        PerfScroll.CanvasSize=UDim2.new(0,0,0,PerfLL.AbsoluteContentSize.Y+20)
     end)
 
-    FinisherScroll.CanvasSize = UDim2.new(0,0,0,FinisherGrid.AbsoluteContentSize.Y+12)
+    -- ════════════════════════════════════════════
+    -- FINISHER PANEL  (per weapon — shows after selecting weapon from left)
+    -- ════════════════════════════════════════════
+    local FinScroll=Instance.new("ScrollingFrame",RightPanel)
+    FinScroll.Size=UDim2.new(1,-16,1,-54) FinScroll.Position=UDim2.new(0,8,0,50)
+    FinScroll.BackgroundTransparency=1 FinScroll.ScrollBarThickness=3
+    FinScroll.ScrollBarImageColor3=C.RED FinScroll.BorderSizePixel=0 FinScroll.Visible=false
+    local FinGrid=Instance.new("UIGridLayout",FinScroll)
+    FinGrid.CellSize=UDim2.new(0,175,0,58) FinGrid.CellPadding=UDim2.new(0,8,0,8)
+    FinGrid.SortOrder=Enum.SortOrder.LayoutOrder
 
-    -- ═══════════════════════════════════════════════
-    -- BUILD PERF TAB (redesigned)
-    -- ═══════════════════════════════════════════════
-    local function PHeader(txt, order, col)
-        local f = Instance.new("Frame", PerfScroll)
-        f.Size = UDim2.new(1, -8, 0, 30)
-        f.BackgroundColor3 = col and Color3.fromRGB(
-            math.floor(col.R*255*0.15), math.floor(col.G*255*0.15), math.floor(col.B*255*0.15)
-        ) or Color3.fromRGB(30, 15, 15)
-        f.BorderSizePixel = 0
-        f.LayoutOrder = order
-        Rnd(f, 6)
-
-        local line = Instance.new("Frame", f)
-        line.Size = UDim2.new(0, 3, 0.7, 0)
-        line.Position = UDim2.new(0, 0, 0.15, 0)
-        line.BackgroundColor3 = col or C.RED
-        line.BorderSizePixel = 0
-        Rnd(line, 2)
-
-        local lbl = Instance.new("TextLabel", f)
-        lbl.Size = UDim2.new(1, -16, 1, 0)
-        lbl.Position = UDim2.new(0, 12, 0, 0)
-        lbl.BackgroundTransparency = 1
-        lbl.Text = txt
-        lbl.TextColor3 = col or C.RED
-        lbl.Font = Enum.Font.GothamBlack
-        lbl.TextSize = 12
-        lbl.TextXAlignment = Enum.TextXAlignment.Left
+    local function PopulateFinishers(wp)
+        for _,c in pairs(FinScroll:GetChildren()) do if c:IsA("TextButton") then c:Destroy() end end
+        -- "None" first
+        local function makeFinBtn(fin, order)
+            local fb=Instance.new("TextButton")
+            fb.Size=UDim2.new(0,175,0,58) fb.BorderSizePixel=0
+            fb.AutoButtonColor=false fb.LayoutOrder=order fb.Text=""
+            fb.BackgroundColor3 = (_G.EquippedData[wp] and _G.EquippedData[wp].Finisher==fin) and Color3.fromRGB(90,30,30) or C.CARD
+            fb.Parent=FinScroll
+            Rnd(fb,7) Str(fb,C.SEP,1)
+            local icon=Instance.new("TextLabel",fb)
+            icon.Size=UDim2.new(0,30,1,0) icon.Position=UDim2.new(0,6,0,0)
+            icon.BackgroundTransparency=1 icon.TextSize=16 icon.Font=Enum.Font.GothamBold
+            icon.Text = fin=="None" and "🚫" or "💀"
+            local lbl=Instance.new("TextLabel",fb)
+            lbl.Size=UDim2.new(1,-40,1,0) lbl.Position=UDim2.new(0,36,0,0)
+            lbl.BackgroundTransparency=1 lbl.Text=fin
+            lbl.TextColor3=C.TEXT lbl.Font=Enum.Font.GothamSemibold lbl.TextSize=12
+            lbl.TextWrapped=true lbl.TextXAlignment=Enum.TextXAlignment.Left
+            -- owned badge
+            local bd=Instance.new("TextLabel",fb)
+            bd.Size=UDim2.new(0,52,0,14) bd.Position=UDim2.new(1,-56,0,4)
+            bd.BackgroundColor3=C.EQUIP bd.TextColor3=Color3.new(1,1,1)
+            bd.Font=Enum.Font.GothamBold bd.TextSize=8 bd.Text="✓ OWNED"
+            bd.BorderSizePixel=0 Rnd(bd,4)
+            if fin=="None" then bd.BackgroundColor3=C.DIM bd.Text="NONE" end
+            fb.MouseButton1Click:Connect(function()
+                for _,c2 in pairs(FinScroll:GetChildren()) do if c2:IsA("TextButton") then c2.BackgroundColor3=C.CARD end end
+                fb.BackgroundColor3=Color3.fromRGB(90,30,30)
+                _G.EquippedData[wp].Finisher=fin
+                if fin~="None" then pcall(function() CosmeticLibrary.Equip(wp,"Finisher",fin) end) end
+                SelLbl.Text="💀  "..wp.."  —  Finisher: "..fin
+                Flash("💀 "..wp.." finisher: "..fin, C.RED)
+                SaveConfig()
+            end)
+        end
+        makeFinBtn("None",0)
+        for i,fin in ipairs(FinisherList) do makeFinBtn(fin,i) end
+        FinScroll.CanvasSize=UDim2.new(0,0,0,FinGrid.AbsoluteContentSize.Y+12)
     end
 
-    local function PToggle(label, desc, order, callback, accent)
-        local row = Instance.new("Frame", PerfScroll)
-        row.Size = UDim2.new(1, -8, 0, 62)
-        row.BackgroundColor3 = C.CARD
-        row.BorderSizePixel = 0
-        row.LayoutOrder = order
-        Rnd(row, 8)
-        Str(row, C.SEP, 1)
+    -- ════════════════════════════════════════════
+    -- AIM ASSIST PANEL
+    -- ════════════════════════════════════════════
+    local AimScroll=Instance.new("ScrollingFrame",RightPanel)
+    AimScroll.Size=UDim2.new(1,-16,1,-54) AimScroll.Position=UDim2.new(0,8,0,50)
+    AimScroll.BackgroundTransparency=1 AimScroll.ScrollBarThickness=3
+    AimScroll.ScrollBarImageColor3=C.ORANGE AimScroll.BorderSizePixel=0 AimScroll.Visible=false
+    AimScroll.CanvasSize=UDim2.new(0,0,0,600)
+    local AimLL=Instance.new("UIListLayout",AimScroll)
+    AimLL.Padding=UDim.new(0,10) AimLL.SortOrder=Enum.SortOrder.LayoutOrder
 
-        local lbl = Instance.new("TextLabel", row)
-        lbl.Size = UDim2.new(1, -82, 0, 26)
-        lbl.Position = UDim2.new(0, 14, 0, 8)
-        lbl.BackgroundTransparency = 1
-        lbl.Text = label
-        lbl.TextColor3 = C.TEXT
-        lbl.Font = Enum.Font.GothamBold
-        lbl.TextSize = 13
-        lbl.TextXAlignment = Enum.TextXAlignment.Left
+    -- Helper: section header
+    local function AimHeader(txt,order,col)
+        local f=Instance.new("Frame",AimScroll)
+        f.Size=UDim2.new(1,-8,0,30) f.BackgroundColor3=Color3.fromRGB(22,16,10)
+        f.BorderSizePixel=0 f.LayoutOrder=order Rnd(f,6)
+        local ln=Instance.new("Frame",f) ln.Size=UDim2.new(0,3,0.7,0) ln.Position=UDim2.new(0,0,0.15,0)
+        ln.BackgroundColor3=col or C.ORANGE ln.BorderSizePixel=0 Rnd(ln,2)
+        local lb=Instance.new("TextLabel",f) lb.Size=UDim2.new(1,-14,1,0) lb.Position=UDim2.new(0,12,0,0)
+        lb.BackgroundTransparency=1 lb.Text=txt lb.TextColor3=col or C.ORANGE
+        lb.Font=Enum.Font.GothamBlack lb.TextSize=12 lb.TextXAlignment=Enum.TextXAlignment.Left
+    end
 
-        local sub = Instance.new("TextLabel", row)
-        sub.Size = UDim2.new(1, -82, 0, 18)
-        sub.Position = UDim2.new(0, 14, 0, 36)
-        sub.BackgroundTransparency = 1
-        sub.Text = desc
-        sub.TextColor3 = C.DIM
-        sub.Font = Enum.Font.Gotham
-        sub.TextSize = 11
-        sub.TextXAlignment = Enum.TextXAlignment.Left
-
-        local togBg = Instance.new("Frame", row)
-        togBg.Size = UDim2.new(0, 52, 0, 26)
-        togBg.Position = UDim2.new(1, -64, 0.5, -13)
-        togBg.BackgroundColor3 = C.TOG_OFF
-        togBg.BorderSizePixel = 0
-        Rnd(togBg, 13)
-
-        local knob = Instance.new("Frame", togBg)
-        knob.Size = UDim2.new(0, 20, 0, 20)
-        knob.Position = UDim2.new(0, 3, 0.5, -10)
-        knob.BackgroundColor3 = Color3.new(1,1,1)
-        knob.BorderSizePixel = 0
-        Rnd(knob, 10)
-
-        local state = false
-        local clk = Instance.new("TextButton", row)
-        clk.Size = UDim2.new(1,0,1,0) clk.BackgroundTransparency=1 clk.Text="" clk.ZIndex=2
+    -- Helper: toggle row
+    local function AimToggle(parent,label,desc,order,cb,accent)
+        local row=Instance.new("Frame",parent)
+        row.Size=UDim2.new(1,-8,0,62) row.BackgroundColor3=C.CARD
+        row.BorderSizePixel=0 row.LayoutOrder=order Rnd(row,8) Str(row,C.SEP,1)
+        local lb=Instance.new("TextLabel",row) lb.Size=UDim2.new(1,-82,0,26) lb.Position=UDim2.new(0,14,0,8)
+        lb.BackgroundTransparency=1 lb.Text=label lb.TextColor3=C.TEXT
+        lb.Font=Enum.Font.GothamBold lb.TextSize=13 lb.TextXAlignment=Enum.TextXAlignment.Left
+        local sb=Instance.new("TextLabel",row) sb.Size=UDim2.new(1,-82,0,18) sb.Position=UDim2.new(0,14,0,36)
+        sb.BackgroundTransparency=1 sb.Text=desc sb.TextColor3=C.DIM
+        sb.Font=Enum.Font.Gotham sb.TextSize=11 sb.TextXAlignment=Enum.TextXAlignment.Left
+        local bg=Instance.new("Frame",row) bg.Size=UDim2.new(0,52,0,26) bg.Position=UDim2.new(1,-64,0.5,-13)
+        bg.BackgroundColor3=C.TOG_OFF bg.BorderSizePixel=0 Rnd(bg,13)
+        local kn=Instance.new("Frame",bg) kn.Size=UDim2.new(0,20,0,20) kn.Position=UDim2.new(0,3,0.5,-10)
+        kn.BackgroundColor3=Color3.new(1,1,1) kn.BorderSizePixel=0 Rnd(kn,10)
+        local state=false
+        local clk=Instance.new("TextButton",row) clk.Size=UDim2.new(1,0,1,0) clk.BackgroundTransparency=1 clk.Text="" clk.ZIndex=2
         clk.MouseButton1Click:Connect(function()
-            state = not state
-            togBg.BackgroundColor3 = state and (accent or C.TOG_ON) or C.TOG_OFF
-            knob.Position = state and UDim2.new(0, 29, 0.5, -10) or UDim2.new(0, 3, 0.5, -10)
+            state=not state
+            bg.BackgroundColor3=state and (accent or C.TOG_ON) or C.TOG_OFF
+            kn.Position=state and UDim2.new(0,29,0.5,-10) or UDim2.new(0,3,0.5,-10)
+            cb(state)
+        end)
+        return function(s) state=s bg.BackgroundColor3=state and (accent or C.TOG_ON) or C.TOG_OFF kn.Position=state and UDim2.new(0,29,0.5,-10) or UDim2.new(0,3,0.5,-10) end
+    end
+
+    -- Helper: slider
+    local function AimSlider(label,desc,order,minV,maxV,initV,cb)
+        local row=Instance.new("Frame",AimScroll)
+        row.Size=UDim2.new(1,-8,0,80) row.BackgroundColor3=C.CARD
+        row.BorderSizePixel=0 row.LayoutOrder=order Rnd(row,8) Str(row,C.SEP,1)
+        local lb=Instance.new("TextLabel",row) lb.Size=UDim2.new(1,-100,0,22) lb.Position=UDim2.new(0,14,0,6)
+        lb.BackgroundTransparency=1 lb.Text=label lb.TextColor3=C.TEXT
+        lb.Font=Enum.Font.GothamBold lb.TextSize=13 lb.TextXAlignment=Enum.TextXAlignment.Left
+        local vl=Instance.new("TextLabel",row) vl.Size=UDim2.new(0,80,0,22) vl.Position=UDim2.new(1,-90,0,6)
+        vl.BackgroundTransparency=1 vl.Text=tostring(initV) vl.TextColor3=C.ORANGE
+        vl.Font=Enum.Font.GothamBold vl.TextSize=13 vl.TextXAlignment=Enum.TextXAlignment.Right
+        local sb2=Instance.new("TextLabel",row) sb2.Size=UDim2.new(1,-24,0,16) sb2.Position=UDim2.new(0,12,0,30)
+        sb2.BackgroundTransparency=1 sb2.Text=desc sb2.TextColor3=C.DIM
+        sb2.Font=Enum.Font.Gotham sb2.TextSize=11 sb2.TextXAlignment=Enum.TextXAlignment.Left
+        -- track
+        local track=Instance.new("Frame",row) track.Size=UDim2.new(1,-28,0,8) track.Position=UDim2.new(0,14,0,54)
+        track.BackgroundColor3=C.CARD track.BorderSizePixel=0 Rnd(track,4) Str(track,C.SEP,1)
+        local fill=Instance.new("Frame",track) fill.Size=UDim2.new((initV-minV)/(maxV-minV),0,1,0)
+        fill.BackgroundColor3=C.ORANGE fill.BorderSizePixel=0 Rnd(fill,4)
+        local knob2=Instance.new("Frame",track) knob2.Size=UDim2.new(0,16,0,16) knob2.AnchorPoint=Vector2.new(0.5,0.5)
+        knob2.Position=UDim2.new((initV-minV)/(maxV-minV),0,0.5,0)
+        knob2.BackgroundColor3=Color3.new(1,1,1) knob2.BorderSizePixel=0 Rnd(knob2,8)
+        local dragging2=false
+        local clk2=Instance.new("TextButton",row) clk2.Size=UDim2.new(1,-28,0,28) clk2.Position=UDim2.new(0,14,0,42)
+        clk2.BackgroundTransparency=1 clk2.Text="" clk2.ZIndex=3
+        clk2.MouseButton1Down:Connect(function() dragging2=true end)
+        clk2.MouseButton1Up:Connect(function() dragging2=false end)
+        UserInputService.InputChanged:Connect(function(inp)
+            if dragging2 and inp.UserInputType==Enum.UserInputType.MouseMovement then
+                local abs=track.AbsolutePosition local sz=track.AbsoluteSize
+                local rel=math.clamp((inp.Position.X-abs.X)/sz.X,0,1)
+                local val=math.floor(minV+(maxV-minV)*rel+0.5)
+                fill.Size=UDim2.new(rel,0,1,0)
+                knob2.Position=UDim2.new(rel,0,0.5,0)
+                vl.Text=tostring(val)
+                cb(val)
+            end
+        end)
+        UserInputService.InputEnded:Connect(function(inp)
+            if inp.UserInputType==Enum.UserInputType.MouseButton1 then dragging2=false end
+        end)
+    end
+
+    -- Build Aim Assist tab contents
+    AimHeader("🎯  AIM ASSIST SETTINGS",1,C.ORANGE)
+
+    -- Main toggle
+    local aimTogRow=Instance.new("Frame",AimScroll)
+    aimTogRow.Size=UDim2.new(1,-8,0,62) aimTogRow.BackgroundColor3=C.CARD
+    aimTogRow.BorderSizePixel=0 aimTogRow.LayoutOrder=2 Rnd(aimTogRow,8) Str(aimTogRow,C.SEP,1)
+    local aTL=Instance.new("TextLabel",aimTogRow) aTL.Size=UDim2.new(1,-82,0,26) aTL.Position=UDim2.new(0,14,0,8)
+    aTL.BackgroundTransparency=1 aTL.Text="Enable Aim Assist" aTL.TextColor3=C.TEXT
+    aTL.Font=Enum.Font.GothamBold aTL.TextSize=13 aTL.TextXAlignment=Enum.TextXAlignment.Left
+    local aTSub=Instance.new("TextLabel",aimTogRow) aTSub.Size=UDim2.new(1,-82,0,18) aTSub.Position=UDim2.new(0,14,0,36)
+    aTSub.BackgroundTransparency=1 aTSub.Text="Softly pulls crosshair toward nearby enemies"
+    aTSub.TextColor3=C.DIM aTSub.Font=Enum.Font.Gotham aTSub.TextSize=11 aTSub.TextXAlignment=Enum.TextXAlignment.Left
+    local aTBg=Instance.new("Frame",aimTogRow) aTBg.Size=UDim2.new(0,52,0,26) aTBg.Position=UDim2.new(1,-64,0.5,-13)
+    aTBg.BackgroundColor3=C.TOG_OFF aTBg.BorderSizePixel=0 Rnd(aTBg,13)
+    local aTKn=Instance.new("Frame",aTBg) aTKn.Size=UDim2.new(0,20,0,20) aTKn.Position=UDim2.new(0,3,0.5,-10)
+    aTKn.BackgroundColor3=Color3.new(1,1,1) aTKn.BorderSizePixel=0 Rnd(aTKn,10)
+    local aTBtn=Instance.new("TextButton",aimTogRow) aTBtn.Size=UDim2.new(1,0,1,0) aTBtn.BackgroundTransparency=1
+    aTBtn.Text="" aTBtn.ZIndex=2
+    aTBtn.MouseButton1Click:Connect(function()
+        _G.AimAssist.Enabled=not _G.AimAssist.Enabled
+        aTBg.BackgroundColor3=_G.AimAssist.Enabled and C.ORANGE or C.TOG_OFF
+        aTKn.Position=_G.AimAssist.Enabled and UDim2.new(0,29,0.5,-10) or UDim2.new(0,3,0.5,-10)
+        SetAimAssist(_G.AimAssist.Enabled)
+        Flash(_G.AimAssist.Enabled and "🎯 Aim Assist ON" or "🎯 Aim Assist OFF", C.ORANGE)
+    end)
+
+    -- Strength slider
+    AimSlider("Aim Assist Strength","How hard it pulls toward enemies (higher = stronger)",3,1,10,4,function(v)
+        _G.AimAssist.Strength = v/10
+    end)
+
+    -- Range slider
+    AimSlider("Detection Range (px)","Screen-space pixel radius around crosshair to look for enemies",4,30,200,80,function(v)
+        _G.AimAssist.Range = v
+    end)
+
+    AimHeader("ℹ️  HOW IT WORKS",5,C.DIM)
+    local infoCard=Instance.new("Frame",AimScroll)
+    infoCard.Size=UDim2.new(1,-8,0,90) infoCard.BackgroundColor3=C.CARD
+    infoCard.BorderSizePixel=0 infoCard.LayoutOrder=6 Rnd(infoCard,8) Str(infoCard,C.SEP,1)
+    local infoTxt=Instance.new("TextLabel",infoCard)
+    infoTxt.Size=UDim2.new(1,-20,1,-10) infoTxt.Position=UDim2.new(0,10,0,5)
+    infoTxt.BackgroundTransparency=1 infoTxt.TextColor3=C.DIM infoTxt.TextWrapped=true
+    infoTxt.Font=Enum.Font.Gotham infoTxt.TextSize=12 infoTxt.TextXAlignment=Enum.TextXAlignment.Left
+    infoTxt.Text="Aim Assist softly nudges your cursor toward the nearest enemy's torso within the detection radius. It works like a gentle magnet — it only helps, never locks on. Low strength = learning assist. Higher strength = stronger pull.\n\nRequires an executor with mousemoverel support."
+
+    -- ════════════════════════════════════════════
+    -- PERF TAB CONTENTS
+    -- ════════════════════════════════════════════
+    local function PHeader(txt,order,col)
+        local f=Instance.new("Frame",PerfScroll) f.Size=UDim2.new(1,-8,0,30)
+        f.BackgroundColor3=Color3.fromRGB(22,14,14) f.BorderSizePixel=0 f.LayoutOrder=order Rnd(f,6)
+        local ln=Instance.new("Frame",f) ln.Size=UDim2.new(0,3,0.7,0) ln.Position=UDim2.new(0,0,0.15,0)
+        ln.BackgroundColor3=col or C.RED ln.BorderSizePixel=0 Rnd(ln,2)
+        local lb=Instance.new("TextLabel",f) lb.Size=UDim2.new(1,-14,1,0) lb.Position=UDim2.new(0,12,0,0)
+        lb.BackgroundTransparency=1 lb.Text=txt lb.TextColor3=col or C.RED
+        lb.Font=Enum.Font.GothamBlack lb.TextSize=12 lb.TextXAlignment=Enum.TextXAlignment.Left
+    end
+
+    local function PToggle(label,desc,order,callback,accent)
+        local row=Instance.new("Frame",PerfScroll) row.Size=UDim2.new(1,-8,0,62)
+        row.BackgroundColor3=C.CARD row.BorderSizePixel=0 row.LayoutOrder=order Rnd(row,8) Str(row,C.SEP,1)
+        local lb=Instance.new("TextLabel",row) lb.Size=UDim2.new(1,-82,0,26) lb.Position=UDim2.new(0,14,0,8)
+        lb.BackgroundTransparency=1 lb.Text=label lb.TextColor3=C.TEXT
+        lb.Font=Enum.Font.GothamBold lb.TextSize=13 lb.TextXAlignment=Enum.TextXAlignment.Left
+        local sb=Instance.new("TextLabel",row) sb.Size=UDim2.new(1,-82,0,18) sb.Position=UDim2.new(0,14,0,36)
+        sb.BackgroundTransparency=1 sb.Text=desc sb.TextColor3=C.DIM
+        sb.Font=Enum.Font.Gotham sb.TextSize=11 sb.TextXAlignment=Enum.TextXAlignment.Left
+        local bg=Instance.new("Frame",row) bg.Size=UDim2.new(0,52,0,26) bg.Position=UDim2.new(1,-64,0.5,-13)
+        bg.BackgroundColor3=C.TOG_OFF bg.BorderSizePixel=0 Rnd(bg,13)
+        local kn=Instance.new("Frame",bg) kn.Size=UDim2.new(0,20,0,20) kn.Position=UDim2.new(0,3,0.5,-10)
+        kn.BackgroundColor3=Color3.new(1,1,1) kn.BorderSizePixel=0 Rnd(kn,10)
+        local state=false
+        local clk=Instance.new("TextButton",row) clk.Size=UDim2.new(1,0,1,0) clk.BackgroundTransparency=1 clk.Text="" clk.ZIndex=2
+        clk.MouseButton1Click:Connect(function()
+            state=not state
+            bg.BackgroundColor3=state and (accent or C.TOG_ON) or C.TOG_OFF
+            kn.Position=state and UDim2.new(0,29,0.5,-10) or UDim2.new(0,3,0.5,-10)
             callback(state)
         end)
-        return function(s)
-            state = s
-            togBg.BackgroundColor3 = state and (accent or C.TOG_ON) or C.TOG_OFF
-            knob.Position = state and UDim2.new(0, 29, 0.5, -10) or UDim2.new(0, 3, 0.5, -10)
-        end
     end
 
-    -- GRAPHICS SECTION
-    PHeader("🔧  GRAPHICS OPTIMIZATIONS", 1, C.RED)
-    PToggle("Low Graphics Quality",  "Set render quality to minimum Level01",      2, ApplyLowGraphics)
-    PToggle("Disable Shadows",       "Turn off all dynamic & cast shadows",         3, ApplyNoShadows)
-    PToggle("Disable Particles",     "Remove particles, trails and beam effects",   4, ApplyNoParticles)
-    PToggle("Low Mesh Detail",       "Reduce mesh part detail level for FPS gains", 5, ApplyLowMesh)
+    -- GRAPHICS
+    PHeader("🔧  GRAPHICS OPTIMIZATIONS",1,C.RED)
+    PToggle("Low Graphics Quality","Set render quality to minimum Level01",2,ApplyLowGraphics)
+    PToggle("Disable Shadows","Turn off all dynamic & cast shadows",3,ApplyNoShadows)
+    PToggle("Disable Particles","Remove particles, trails and beam effects",4,ApplyNoParticles)
+    PToggle("Low Mesh Detail","Reduce mesh part detail level for FPS",5,ApplyLowMesh)
 
-    -- VISIBILITY SECTION
-    PHeader("👁  VISIBILITY OPTIONS", 9, C.CYAN)
-    PToggle("Hide Weapon (Invisible)", "Makes your held weapon fully invisible (FPS boost)", 10, ApplyHideWeapon, C.CYAN)
-    PToggle("Hide Player Names",       "Removes overhead name tags on all players",          11, ApplyHideNames, C.CYAN)
-    PToggle("Hide Chat",               "Hides the chat window entirely",                     12, ApplyHideChat,  C.CYAN)
+    -- VISIBILITY
+    PHeader("👁  VISIBILITY OPTIONS",9,C.CYAN)
+    PToggle("Hide Weapon (Full)","Makes your entire weapon invisible",10,ApplyHideWeapon,C.CYAN)
+    PToggle("Hide Arms Only","Hides viewmodel arms, keeps weapon visible",11,ApplyHideArms,C.CYAN)
+    PToggle("Hide Muzzle Flash","Removes muzzle flash & fire particles",12,ApplyHideMuzzle,C.CYAN)
+    PToggle("Hide Visible Bullets","Removes bullet/projectile trails and models",13,ApplyHideBullets,C.CYAN)
+    PToggle("Hide Reload Indicator","Hides the reload bar and ammo UI symbols",14,ApplyHideReload,C.CYAN)
+    PToggle("Hide Player Names","Removes overhead name tags on all players",15,ApplyHideNames,C.CYAN)
+    PToggle("Hide Chat Window","Hides chat display  (type / to still chat)",16,ApplyHideChat,C.CYAN)
 
-    -- HIT OUTLINE SECTION
-    PHeader("🎯  HIT OUTLINE SETTINGS", 19, C.PURPLE)
-
-    local outlineTogRow = Instance.new("Frame", PerfScroll)
-    outlineTogRow.Size = UDim2.new(1, -8, 0, 62)
-    outlineTogRow.BackgroundColor3 = C.CARD
-    outlineTogRow.BorderSizePixel = 0
-    outlineTogRow.LayoutOrder = 20
-    Rnd(outlineTogRow, 8)
-    Str(outlineTogRow, C.SEP, 1)
-
-    local otLbl = Instance.new("TextLabel", outlineTogRow)
-    otLbl.Size = UDim2.new(1,-82,0,26)
-    otLbl.Position = UDim2.new(0,14,0,8)
-    otLbl.BackgroundTransparency = 1
-    otLbl.Text = "Enable Hit Outline"
-    otLbl.TextColor3 = C.TEXT
-    otLbl.Font = Enum.Font.GothamBold
-    otLbl.TextSize = 13
-    otLbl.TextXAlignment = Enum.TextXAlignment.Left
-
-    local otSub = Instance.new("TextLabel", outlineTogRow)
-    otSub.Size = UDim2.new(1,-82,0,18)
-    otSub.Position = UDim2.new(0,14,0,36)
-    otSub.BackgroundTransparency = 1
-    otSub.Text = "Show/hide the red outline when you hit enemies"
-    otSub.TextColor3 = C.DIM
-    otSub.Font = Enum.Font.Gotham
-    otSub.TextSize = 11
-    otSub.TextXAlignment = Enum.TextXAlignment.Left
-
-    local outlineTog = Instance.new("Frame", outlineTogRow)
-    outlineTog.Size = UDim2.new(0,52,0,26)
-    outlineTog.Position = UDim2.new(1,-64,0.5,-13)
-    outlineTog.BackgroundColor3 = C.TOG_ON -- ON by default
-    outlineTog.BorderSizePixel = 0
-    Rnd(outlineTog, 13)
-
-    local outlineKnob = Instance.new("Frame", outlineTog)
-    outlineKnob.Size = UDim2.new(0,20,0,20)
-    outlineKnob.Position = UDim2.new(0,29,0.5,-10)
-    outlineKnob.BackgroundColor3 = Color3.new(1,1,1)
-    outlineKnob.BorderSizePixel = 0
-    Rnd(outlineKnob, 10)
-
-    local outlineTogBtn = Instance.new("TextButton", outlineTogRow)
-    outlineTogBtn.Size = UDim2.new(1,0,1,0)
-    outlineTogBtn.BackgroundTransparency = 1
-    outlineTogBtn.Text = ""
-    outlineTogBtn.ZIndex = 2
-    local outlineOn = true
-    outlineTogBtn.MouseButton1Click:Connect(function()
-        outlineOn = not outlineOn
-        _G.OutlineSettings.Enabled = outlineOn
-        outlineTog.BackgroundColor3 = outlineOn and C.PURPLE or C.TOG_OFF
-        outlineKnob.Position = outlineOn and UDim2.new(0,29,0.5,-10) or UDim2.new(0,3,0.5,-10)
+    -- HIT OUTLINE
+    PHeader("🎯  HIT OUTLINE",19,C.PURPLE)
+    -- toggle
+    local outlineRow=Instance.new("Frame",PerfScroll) outlineRow.Size=UDim2.new(1,-8,0,62)
+    outlineRow.BackgroundColor3=C.CARD outlineRow.BorderSizePixel=0 outlineRow.LayoutOrder=20 Rnd(outlineRow,8) Str(outlineRow,C.SEP,1)
+    local oLb=Instance.new("TextLabel",outlineRow) oLb.Size=UDim2.new(1,-82,0,26) oLb.Position=UDim2.new(0,14,0,8)
+    oLb.BackgroundTransparency=1 oLb.Text="Enable Hit Outline" oLb.TextColor3=C.TEXT
+    oLb.Font=Enum.Font.GothamBold oLb.TextSize=13 oLb.TextXAlignment=Enum.TextXAlignment.Left
+    local oSb=Instance.new("TextLabel",outlineRow) oSb.Size=UDim2.new(1,-82,0,18) oSb.Position=UDim2.new(0,14,0,36)
+    oSb.BackgroundTransparency=1 oSb.Text="Show/hide the outline when hitting enemies"
+    oSb.TextColor3=C.DIM oSb.Font=Enum.Font.Gotham oSb.TextSize=11 oSb.TextXAlignment=Enum.TextXAlignment.Left
+    local oBg=Instance.new("Frame",outlineRow) oBg.Size=UDim2.new(0,52,0,26) oBg.Position=UDim2.new(1,-64,0.5,-13)
+    oBg.BackgroundColor3=C.PURPLE oBg.BorderSizePixel=0 Rnd(oBg,13) -- ON by default
+    local oKn=Instance.new("Frame",oBg) oKn.Size=UDim2.new(0,20,0,20) oKn.Position=UDim2.new(0,29,0.5,-10)
+    oKn.BackgroundColor3=Color3.new(1,1,1) oKn.BorderSizePixel=0 Rnd(oKn,10)
+    local oBtn=Instance.new("TextButton",outlineRow) oBtn.Size=UDim2.new(1,0,1,0) oBtn.BackgroundTransparency=1 oBtn.Text="" oBtn.ZIndex=2
+    local outlineOn=true
+    oBtn.MouseButton1Click:Connect(function()
+        outlineOn=not outlineOn
+        _G.OutlineSettings.Enabled=outlineOn
+        oBg.BackgroundColor3=outlineOn and C.PURPLE or C.TOG_OFF
+        oKn.Position=outlineOn and UDim2.new(0,29,0.5,-10) or UDim2.new(0,3,0.5,-10)
         ApplyOutlineSettings()
-        Flash(outlineOn and "🎯 Outline ON" or "🎯 Outline OFF", C.PURPLE)
+        Flash(outlineOn and "🎯 Outline ON" or "🎯 Outline OFF",C.PURPLE)
     end)
 
     -- Outline color picker
-    local outlineColorLbl = Instance.new("TextLabel", PerfScroll)
-    outlineColorLbl.Size = UDim2.new(1,-8,0,22)
-    outlineColorLbl.BackgroundTransparency = 1
-    outlineColorLbl.Text = "  Outline Color"
-    outlineColorLbl.TextColor3 = C.PURPLE
-    outlineColorLbl.Font = Enum.Font.GothamBold
-    outlineColorLbl.TextSize = 11
-    outlineColorLbl.TextXAlignment = Enum.TextXAlignment.Left
-    outlineColorLbl.LayoutOrder = 21
-
-    local outlineColorOpts = {
-        {n="Red",    c=Color3.fromRGB(230,55,55)},
-        {n="Orange", c=Color3.fromRGB(240,130,30)},
-        {n="Yellow", c=Color3.fromRGB(240,215,35)},
-        {n="Lime",   c=Color3.fromRGB(55,215,75)},
-        {n="Cyan",   c=Color3.fromRGB(45,205,225)},
-        {n="Blue",   c=Color3.fromRGB(55,115,250)},
-        {n="Purple", c=Color3.fromRGB(170,55,250)},
-        {n="Pink",   c=Color3.fromRGB(250,75,175)},
-        {n="White",  c=Color3.fromRGB(238,238,238)},
-        {n="Gold",   c=Color3.fromRGB(248,195,35)},
-        {n="Mint",   c=Color3.fromRGB(55,210,160)},
-        {n="Coral",  c=Color3.fromRGB(250,100,85)},
+    local oclLbl=Instance.new("TextLabel",PerfScroll) oclLbl.Size=UDim2.new(1,-8,0,20)
+    oclLbl.BackgroundTransparency=1 oclLbl.Text="  Outline Color" oclLbl.TextColor3=C.PURPLE
+    oclLbl.Font=Enum.Font.GothamBold oclLbl.TextSize=11 oclLbl.TextXAlignment=Enum.TextXAlignment.Left oclLbl.LayoutOrder=21
+    local oclContainer=Instance.new("Frame",PerfScroll) oclContainer.Size=UDim2.new(1,-8,0,118)
+    oclContainer.BackgroundColor3=C.CARD oclContainer.BorderSizePixel=0 oclContainer.LayoutOrder=22
+    Rnd(oclContainer,7) Str(oclContainer,C.SEP,1) Pad(oclContainer,8,8,8,8)
+    local oclGrid=Instance.new("UIGridLayout",oclContainer) oclGrid.CellSize=UDim2.new(0,88,0,34)
+    oclGrid.CellPadding=UDim2.new(0,6,0,6) oclGrid.SortOrder=Enum.SortOrder.LayoutOrder
+    local colorOpts2={
+        {n="Red",c=Color3.fromRGB(230,55,55)},{n="Orange",c=Color3.fromRGB(240,130,30)},
+        {n="Yellow",c=Color3.fromRGB(240,215,35)},{n="Lime",c=Color3.fromRGB(55,215,75)},
+        {n="Cyan",c=Color3.fromRGB(45,205,225)},{n="Blue",c=Color3.fromRGB(55,115,250)},
+        {n="Purple",c=Color3.fromRGB(170,55,250)},{n="Pink",c=Color3.fromRGB(250,75,175)},
+        {n="White",c=Color3.fromRGB(238,238,238)},{n="Gold",c=Color3.fromRGB(248,195,35)},
+        {n="Mint",c=Color3.fromRGB(55,210,160)},{n="Coral",c=Color3.fromRGB(250,100,85)},
     }
-
-    local outlineColorContainer = Instance.new("Frame", PerfScroll)
-    outlineColorContainer.Size = UDim2.new(1,-8,0,118)
-    outlineColorContainer.BackgroundColor3 = C.CARD
-    outlineColorContainer.BorderSizePixel = 0
-    outlineColorContainer.LayoutOrder = 22
-    Rnd(outlineColorContainer, 7)
-    Str(outlineColorContainer, C.SEP, 1)
-    Pad(outlineColorContainer, 8, 8, 8, 8)
-
-    local outlineColorGrid = Instance.new("UIGridLayout", outlineColorContainer)
-    outlineColorGrid.CellSize = UDim2.new(0,88,0,34)
-    outlineColorGrid.CellPadding = UDim2.new(0,6,0,6)
-    outlineColorGrid.SortOrder = Enum.SortOrder.LayoutOrder
-
-    local activeOutlineStroke = nil
-    for i, opt in ipairs(outlineColorOpts) do
-        local cb = Instance.new("TextButton", outlineColorContainer)
-        cb.BackgroundColor3 = opt.c
-        cb.Text = opt.n
-        cb.TextColor3 = Color3.new(1,1,1)
-        cb.Font = Enum.Font.GothamBold
-        cb.TextSize = 12
-        cb.BorderSizePixel = 0
-        cb.LayoutOrder = i
-        cb.AutoButtonColor = false
-        Rnd(cb, 5)
-        local stroke = Str(cb, Color3.new(1,1,1), 0)
+    local activeOclStroke=nil
+    for i,opt in ipairs(colorOpts2) do
+        local cb=Instance.new("TextButton",oclContainer)
+        cb.BackgroundColor3=opt.c cb.Text=opt.n cb.TextColor3=Color3.new(1,1,1)
+        cb.Font=Enum.Font.GothamBold cb.TextSize=12 cb.BorderSizePixel=0 cb.LayoutOrder=i cb.AutoButtonColor=false
+        Rnd(cb,5)
+        local stroke=Str(cb,Color3.new(1,1,1),0)
         cb.MouseButton1Click:Connect(function()
-            if activeOutlineStroke then activeOutlineStroke.Thickness = 0 end
-            stroke.Thickness = 2
-            activeOutlineStroke = stroke
-            _G.OutlineSettings.Color = opt.c
+            if activeOclStroke then activeOclStroke.Thickness=0 end
+            stroke.Thickness=2 activeOclStroke=stroke
+            _G.OutlineSettings.Color=opt.c
             ApplyOutlineSettings()
-            Flash("🎯 Outline color: " .. opt.n, opt.c)
+            Flash("🎯 Outline: "..opt.n,opt.c)
         end)
     end
 
-    -- DAMAGE COLOR SECTION
-    PHeader("🎨  DAMAGE NUMBER COLOR", 29, C.GOLD)
-
-    local colorOpts = {
-        {n="Red",    c=Color3.fromRGB(230,55,55)},
-        {n="Orange", c=Color3.fromRGB(240,130,30)},
-        {n="Yellow", c=Color3.fromRGB(240,215,35)},
-        {n="Lime",   c=Color3.fromRGB(55,215,75)},
-        {n="Cyan",   c=Color3.fromRGB(45,205,225)},
-        {n="Blue",   c=Color3.fromRGB(55,115,250)},
-        {n="Purple", c=Color3.fromRGB(170,55,250)},
-        {n="Pink",   c=Color3.fromRGB(250,75,175)},
-        {n="White",  c=Color3.fromRGB(238,238,238)},
-        {n="Gold",   c=Color3.fromRGB(248,195,35)},
-        {n="Mint",   c=Color3.fromRGB(55,210,160)},
-        {n="Coral",  c=Color3.fromRGB(250,100,85)},
+    -- DAMAGE COLOR
+    PHeader("🎨  DAMAGE NUMBER COLOR",29,C.GOLD)
+    local dmgContainer=Instance.new("Frame",PerfScroll) dmgContainer.Size=UDim2.new(1,-8,0,118)
+    dmgContainer.BackgroundColor3=C.CARD dmgContainer.BorderSizePixel=0 dmgContainer.LayoutOrder=30
+    Rnd(dmgContainer,7) Str(dmgContainer,C.SEP,1) Pad(dmgContainer,8,8,8,8)
+    local dmgGrid=Instance.new("UIGridLayout",dmgContainer) dmgGrid.CellSize=UDim2.new(0,88,0,34)
+    dmgGrid.CellPadding=UDim2.new(0,6,0,6) dmgGrid.SortOrder=Enum.SortOrder.LayoutOrder
+    local colorOpts={
+        {n="Red",c=Color3.fromRGB(230,55,55)},{n="Orange",c=Color3.fromRGB(240,130,30)},
+        {n="Yellow",c=Color3.fromRGB(240,215,35)},{n="Lime",c=Color3.fromRGB(55,215,75)},
+        {n="Cyan",c=Color3.fromRGB(45,205,225)},{n="Blue",c=Color3.fromRGB(55,115,250)},
+        {n="Purple",c=Color3.fromRGB(170,55,250)},{n="Pink",c=Color3.fromRGB(250,75,175)},
+        {n="White",c=Color3.fromRGB(238,238,238)},{n="Gold",c=Color3.fromRGB(248,195,35)},
+        {n="Mint",c=Color3.fromRGB(55,210,160)},{n="Coral",c=Color3.fromRGB(250,100,85)},
     }
-
-    local colorContainer = Instance.new("Frame", PerfScroll)
-    colorContainer.Size = UDim2.new(1,-8,0,118)
-    colorContainer.BackgroundColor3 = C.CARD
-    colorContainer.BorderSizePixel = 0
-    colorContainer.LayoutOrder = 30
-    Rnd(colorContainer, 7)
-    Str(colorContainer, C.SEP, 1)
-    Pad(colorContainer, 8, 8, 8, 8)
-
-    local colorGrid2 = Instance.new("UIGridLayout", colorContainer)
-    colorGrid2.CellSize = UDim2.new(0,88,0,34)
-    colorGrid2.CellPadding = UDim2.new(0,6,0,6)
-    colorGrid2.SortOrder = Enum.SortOrder.LayoutOrder
-
-    local activeColorStroke = nil
-    for i, opt in ipairs(colorOpts) do
-        local cb = Instance.new("TextButton", colorContainer)
-        cb.BackgroundColor3 = opt.c
-        cb.Text = opt.n
-        cb.TextColor3 = Color3.new(1,1,1)
-        cb.Font = Enum.Font.GothamBold
-        cb.TextSize = 12
-        cb.BorderSizePixel = 0
-        cb.LayoutOrder = i
-        cb.AutoButtonColor = false
-        Rnd(cb, 5)
-        local stroke = Str(cb, Color3.new(1,1,1), 0)
+    local activeDmgStroke=nil
+    for i,opt in ipairs(colorOpts) do
+        local cb=Instance.new("TextButton",dmgContainer)
+        cb.BackgroundColor3=opt.c cb.Text=opt.n cb.TextColor3=Color3.new(1,1,1)
+        cb.Font=Enum.Font.GothamBold cb.TextSize=12 cb.BorderSizePixel=0 cb.LayoutOrder=i cb.AutoButtonColor=false
+        Rnd(cb,5)
+        local stroke=Str(cb,Color3.new(1,1,1),0)
+        -- Default Red selected visual
+        if opt.n=="Red" then stroke.Thickness=2 activeDmgStroke=stroke end
         cb.MouseButton1Click:Connect(function()
-            if activeColorStroke then activeColorStroke.Thickness = 0 end
-            stroke.Thickness = 2
-            activeColorStroke = stroke
+            if activeDmgStroke then activeDmgStroke.Thickness=0 end
+            stroke.Thickness=2 activeDmgStroke=stroke
             ApplyDamageColor(opt.c)
-            Flash("🎨 Damage color: " .. opt.n, opt.c)
+            Flash("🎨 Damage color: "..opt.n,opt.c)
         end)
     end
+    -- Apply default red on load
+    ApplyDamageColor(Color3.fromRGB(230,55,55))
 
-    -- Update perf canvas size
-    PerfScroll.CanvasSize = UDim2.new(0,0,0,PerfLL.AbsoluteContentSize.Y+20)
-    PerfLL:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        PerfScroll.CanvasSize = UDim2.new(0,0,0,PerfLL.AbsoluteContentSize.Y+20)
-    end)
-
-    -- ═══════════════════════════════════════════════
-    -- WEAPON BUTTONS
-    -- ═══════════════════════════════════════════════
-    local currentWeapon = nil
-    local wBtns = {}
+    -- ════════════════════════════════════════════
+    -- WEAPON LIST BUILDER
+    -- ════════════════════════════════════════════
+    local currentWeapon=nil
+    local wBtns={}
 
     local function PopulateSkins(wp)
-        for _, c in pairs(SkinScroll:GetChildren()) do if c:IsA("ImageButton") then c:Destroy() end end
-        for _, skin in ipairs(SkinLists[wp]) do
-            local sb = Instance.new("ImageButton")
-            sb.BackgroundColor3 = (_G.EquippedData[wp] and _G.EquippedData[wp].Skin == skin) and C.EQUIP or C.CARD
-            sb.Image = GetThumb(skin)
-            sb.BorderSizePixel = 0
-            sb.AutoButtonColor = false
-            sb.Parent = SkinScroll
-            Rnd(sb, 6)
-            Str(sb, C.SEP, 1)
-
-            -- UNLOCKED badge (all skins show as owned)
-            local ownBadge = Instance.new("TextLabel", sb)
-            ownBadge.Size = UDim2.new(0, 52, 0, 14)
-            ownBadge.Position = UDim2.new(0, 4, 0, 4)
-            ownBadge.BackgroundColor3 = C.EQUIP
-            ownBadge.TextColor3 = Color3.new(1,1,1)
-            ownBadge.Font = Enum.Font.GothamBold
-            ownBadge.TextSize = 8
-            ownBadge.Text = "✓ OWNED"
-            ownBadge.BorderSizePixel = 0
-            Rnd(ownBadge, 3)
-
-            local lbl = Instance.new("TextLabel", sb)
-            lbl.Size = UDim2.new(1, 0, 0, 32)
-            lbl.Position = UDim2.new(0, 0, 1, -32)
-            lbl.BackgroundColor3 = Color3.new(0,0,0)
-            lbl.BackgroundTransparency = 0.25
-            lbl.Text = skin
-            lbl.TextColor3 = C.TEXT
-            lbl.Font = Enum.Font.GothamSemibold
-            lbl.TextScaled = true
-            lbl.BorderSizePixel = 0
+        for _,c in pairs(SkinScroll:GetChildren()) do if c:IsA("ImageButton") then c:Destroy() end end
+        for _,skin in ipairs(SkinLists[wp]) do
+            local sb=Instance.new("ImageButton")
+            sb.BackgroundColor3=(_G.EquippedData[wp] and _G.EquippedData[wp].Skin==skin) and C.EQUIP or C.CARD
+            sb.Image=GetThumb(skin) sb.BorderSizePixel=0 sb.AutoButtonColor=false sb.Parent=SkinScroll
+            Rnd(sb,6) Str(sb,C.SEP,1)
+            local ownBd=Instance.new("TextLabel",sb) ownBd.Size=UDim2.new(0,52,0,14) ownBd.Position=UDim2.new(0,4,0,4)
+            ownBd.BackgroundColor3=C.EQUIP ownBd.TextColor3=Color3.new(1,1,1)
+            ownBd.Font=Enum.Font.GothamBold ownBd.TextSize=8 ownBd.Text="✓ OWNED" ownBd.BorderSizePixel=0 Rnd(ownBd,3)
+            local lbl=Instance.new("TextLabel",sb) lbl.Size=UDim2.new(1,0,0,32) lbl.Position=UDim2.new(0,0,1,-32)
+            lbl.BackgroundColor3=Color3.new(0,0,0) lbl.BackgroundTransparency=0.25 lbl.Text=skin
+            lbl.TextColor3=C.TEXT lbl.Font=Enum.Font.GothamSemibold lbl.TextScaled=true lbl.BorderSizePixel=0
             sb.MouseButton1Click:Connect(function()
-                for _, c in pairs(SkinScroll:GetChildren()) do if c:IsA("ImageButton") then c.BackgroundColor3 = C.CARD end end
-                sb.BackgroundColor3 = C.EQUIP
-                _G.EquippedData[wp].Skin = skin
+                for _,c2 in pairs(SkinScroll:GetChildren()) do if c2:IsA("ImageButton") then c2.BackgroundColor3=C.CARD end end
+                sb.BackgroundColor3=C.EQUIP
+                _G.EquippedData[wp].Skin=skin
                 pcall(function() CosmeticLibrary.Equip(wp,"Skin",skin) end)
-                SelLbl.Text = "✅  " .. wp .. "  —  " .. skin
-                -- Revolver fix: re-apply after a tiny delay
-                if wp == "Revolver" then
-                    task.delay(0.3, function() FixRevolverSkin(CosmeticLibrary) end)
-                end
+                SelLbl.Text="✅  "..wp.."  —  "..skin
+                if wp=="Revolver" then task.delay(0.3,function() FixRevolverSkin(CosmeticLibrary) end) end
             end)
         end
-        SkinScroll.CanvasSize = UDim2.new(0,0,0,SkinGrid.AbsoluteContentSize.Y+12)
+        SkinScroll.CanvasSize=UDim2.new(0,0,0,SkinGrid.AbsoluteContentSize.Y+12)
     end
 
     local function PopulateWraps(wp)
-        for _, c in pairs(WrapScroll:GetChildren()) do if c:IsA("TextButton") then c:Destroy() end end
-        for i, wrap in ipairs(WrapList) do
-            local wb = Instance.new("TextButton")
-            wb.BackgroundColor3 = (_G.EquippedData[wp] and _G.EquippedData[wp].Wrap == wrap) and C.EQUIP or C.CARD
-            wb.Text = wrap
-            wb.TextColor3 = C.TEXT
-            wb.Font = Enum.Font.GothamSemibold
-            wb.TextSize = 13
-            wb.BorderSizePixel = 0
-            wb.AutoButtonColor = false
-            wb.LayoutOrder = i
-            wb.Parent = WrapScroll
-            Rnd(wb, 5)
-            Str(wb, C.SEP, 1)
-            -- pin top two with accent
-            if wrap == "None" or wrap == "Dark" then
-                Str(wb, Color3.fromRGB(180,180,200), 1)
-            end
+        for _,c in pairs(WrapScroll:GetChildren()) do if c:IsA("TextButton") then c:Destroy() end end
+        for i,wrap in ipairs(WrapList) do
+            local wb=Instance.new("TextButton")
+            wb.BackgroundColor3=(_G.EquippedData[wp] and _G.EquippedData[wp].Wrap==wrap) and C.EQUIP or C.CARD
+            wb.Text=wrap wb.TextColor3=C.TEXT wb.Font=Enum.Font.GothamSemibold wb.TextSize=13
+            wb.BorderSizePixel=0 wb.AutoButtonColor=false wb.LayoutOrder=i wb.Parent=WrapScroll
+            Rnd(wb,5) Str(wb,C.SEP,1)
+            if wrap=="None" or wrap=="Dark" then Str(wb,Color3.fromRGB(180,180,200),1) end
             wb.MouseButton1Click:Connect(function()
-                for _, c in pairs(WrapScroll:GetChildren()) do if c:IsA("TextButton") then c.BackgroundColor3 = C.CARD end end
-                wb.BackgroundColor3 = C.EQUIP
-                _G.EquippedData[wp].Wrap = wrap
+                for _,c2 in pairs(WrapScroll:GetChildren()) do if c2:IsA("TextButton") then c2.BackgroundColor3=C.CARD end end
+                wb.BackgroundColor3=C.EQUIP
+                _G.EquippedData[wp].Wrap=wrap
                 pcall(function() CosmeticLibrary.Equip(wp,"Wrap",wrap) end)
-                SelLbl.Text = "✅  " .. wp .. "  —  " .. wrap .. " (wrap)"
+                SelLbl.Text="✅  "..wp.."  —  "..wrap.." (wrap)"
             end)
         end
-        WrapScroll.CanvasSize = UDim2.new(0,0,0,WrapGrid.AbsoluteContentSize.Y+12)
+        WrapScroll.CanvasSize=UDim2.new(0,0,0,WrapGrid.AbsoluteContentSize.Y+12)
     end
 
+    -- ════════════════════════════════════════════
+    -- REFRESH RIGHT PANEL
+    -- ════════════════════════════════════════════
     local function RefreshRight()
-        local isPerfTab = _G.ActiveTab == "Performance"
-        local isFinTab  = _G.ActiveTab == "Finishers"
-        -- hide/show left panel
-        LeftPanel.Visible = not isPerfTab and not isFinTab
-        -- reset all scrolls
-        SkinScroll.Visible = false
-        WrapScroll.Visible = false
-        PerfScroll.Visible = false
-        FinisherScroll.Visible = false
+        local tab=_G.ActiveTab
+        local fullWidth = tab=="Performance" or tab=="AimAssist"
+        LeftPanel.Visible = not fullWidth and tab~="Finishers"
+        -- Finisher tab DOES show left panel (weapon selection needed)
+        if tab=="Finishers" then LeftPanel.Visible=true end
 
-        if isPerfTab then
-            RightPanel.Size = UDim2.new(1, -MARGIN*2, 0, CH - MARGIN*2)
-            RightPanel.Position = UDim2.new(0, MARGIN, 0, CY + MARGIN)
-            PerfScroll.Visible = true
-            SelLbl.Text = "⚡  Performance & Visuals"
+        SkinScroll.Visible=false WrapScroll.Visible=false
+        PerfScroll.Visible=false FinScroll.Visible=false AimScroll.Visible=false
+
+        if fullWidth then
+            RightPanel.Size=UDim2.new(1,-MARGIN*2,0,CH-MARGIN*2)
+            RightPanel.Position=UDim2.new(0,MARGIN,0,CY+MARGIN)
+            if tab=="Performance" then PerfScroll.Visible=true SelLbl.Text="⚡  Performance & Visuals" end
+            if tab=="AimAssist"   then AimScroll.Visible=true  SelLbl.Text="🎯  Aim Assist" end
             return
         end
-        if isFinTab then
-            RightPanel.Size = UDim2.new(1, -MARGIN*2, 0, CH - MARGIN*2)
-            RightPanel.Position = UDim2.new(0, MARGIN, 0, CY + MARGIN)
-            FinisherScroll.Visible = true
-            FinisherScroll.CanvasSize = UDim2.new(0,0,0,FinisherGrid.AbsoluteContentSize.Y+12)
-            SelLbl.Text = "💀  Kill Finishers  —  All Unlocked"
-            return
-        end
-        RightPanel.Size = UDim2.new(1, -(262+MARGIN*3), 0, CH - MARGIN*2)
-        RightPanel.Position = UDim2.new(0, 262+MARGIN*2, 0, CY + MARGIN)
+
+        RightPanel.Size=UDim2.new(1,-(262+MARGIN*3),0,CH-MARGIN*2)
+        RightPanel.Position=UDim2.new(0,262+MARGIN*2,0,CY+MARGIN)
 
         if not currentWeapon then
-            SelLbl.Text = "Select a weapon from the left" return
+            SelLbl.Text=tab=="Finishers" and "💀  Select a weapon to assign finisher" or "Select a weapon from the left"
+            return
         end
-        if _G.ActiveTab == "Skins" then
-            SkinScroll.Visible = true
-            PopulateSkins(currentWeapon)
-            SelLbl.Text = currentWeapon .. "  —  Choose a Skin"
-        else
-            WrapScroll.Visible = true
-            PopulateWraps(currentWeapon)
-            SelLbl.Text = currentWeapon .. "  —  Choose a Wrap"
+
+        if tab=="Skins" then
+            SkinScroll.Visible=true PopulateSkins(currentWeapon)
+            SelLbl.Text=currentWeapon.."  —  Choose a Skin"
+        elseif tab=="Wraps" then
+            WrapScroll.Visible=true PopulateWraps(currentWeapon)
+            SelLbl.Text=currentWeapon.."  —  Choose a Wrap"
+        elseif tab=="Finishers" then
+            FinScroll.Visible=true PopulateFinishers(currentWeapon)
+            local cur=_G.EquippedData[currentWeapon] and _G.EquippedData[currentWeapon].Finisher or "None"
+            SelLbl.Text="💀  "..currentWeapon.."  —  Finisher: "..cur
         end
     end
 
-    SkinsTabBtn.MouseButton1Click:Connect(function()    SetTab("Skins")       RefreshRight() end)
-    WrapsTabBtn.MouseButton1Click:Connect(function()    SetTab("Wraps")       RefreshRight() end)
-    PerfTabBtn.MouseButton1Click:Connect(function()     SetTab("Performance") RefreshRight() end)
-    FinisherTabBtn.MouseButton1Click:Connect(function() SetTab("Finishers")   RefreshRight() end)
+    SkinsTab.MouseButton1Click:Connect(function() SetTab("Skins")       RefreshRight() end)
+    WrapsTab.MouseButton1Click:Connect(function() SetTab("Wraps")       RefreshRight() end)
+    PerfTab.MouseButton1Click:Connect(function()  SetTab("Performance") RefreshRight() end)
+    FinTab.MouseButton1Click:Connect(function()   SetTab("Finishers")   RefreshRight() end)
+    AimTab.MouseButton1Click:Connect(function()   SetTab("AimAssist")   RefreshRight() end)
 
-    -- Build weapon list
     for wp in pairs(SkinLists) do
-        local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(1, -4, 0, 46)
-        btn.BackgroundColor3 = C.CARD
-        btn.Text = ""
-        btn.BorderSizePixel = 0
-        btn.AutoButtonColor = false
-        btn.Parent = WScroll
-        Rnd(btn, 6)
-        Str(btn, C.SEP, 1)
-        wBtns[wp] = btn
+        local btn=Instance.new("TextButton")
+        btn.Size=UDim2.new(1,-4,0,46) btn.BackgroundColor3=C.CARD btn.Text=""
+        btn.BorderSizePixel=0 btn.AutoButtonColor=false btn.Parent=WScroll
+        Rnd(btn,6) Str(btn,C.SEP,1) wBtns[wp]=btn
 
-        local wlbl = Instance.new("TextLabel", btn)
-        wlbl.Size = UDim2.new(1, -64, 1, 0)
-        wlbl.Position = UDim2.new(0, 10, 0, 0)
-        wlbl.BackgroundTransparency = 1
-        wlbl.Text = wp
-        wlbl.TextColor3 = C.TEXT
-        wlbl.Font = Enum.Font.GothamSemibold
-        wlbl.TextSize = 13
-        wlbl.TextXAlignment = Enum.TextXAlignment.Left
-        wlbl.TextWrapped = true
+        local wlbl=Instance.new("TextLabel",btn) wlbl.Size=UDim2.new(1,-64,1,0) wlbl.Position=UDim2.new(0,10,0,0)
+        wlbl.BackgroundTransparency=1 wlbl.Text=wp wlbl.TextColor3=C.TEXT
+        wlbl.Font=Enum.Font.GothamSemibold wlbl.TextSize=13 wlbl.TextXAlignment=Enum.TextXAlignment.Left wlbl.TextWrapped=true
 
-        local sBadge = Instance.new("TextLabel", btn)
-        sBadge.Size = UDim2.new(0, 52, 0, 15)
-        sBadge.Position = UDim2.new(1, -58, 0, 5)
-        sBadge.BackgroundColor3 = C.RED
-        sBadge.TextColor3 = Color3.new(1,1,1)
-        sBadge.Font = Enum.Font.GothamBold
-        sBadge.TextSize = 9
-        sBadge.BorderSizePixel = 0
-        sBadge.Visible = false
-        Rnd(sBadge, 4)
-
-        local wBadge = Instance.new("TextLabel", btn)
-        wBadge.Size = UDim2.new(0, 52, 0, 15)
-        wBadge.Position = UDim2.new(1, -58, 0, 26)
-        wBadge.BackgroundColor3 = C.BLUE
-        wBadge.TextColor3 = Color3.new(1,1,1)
-        wBadge.Font = Enum.Font.GothamBold
-        wBadge.TextSize = 9
-        wBadge.BorderSizePixel = 0
-        wBadge.Visible = false
-        Rnd(wBadge, 4)
+        local sBadge=Instance.new("TextLabel",btn) sBadge.Size=UDim2.new(0,52,0,15) sBadge.Position=UDim2.new(1,-58,0,3)
+        sBadge.BackgroundColor3=C.RED sBadge.TextColor3=Color3.new(1,1,1) sBadge.Font=Enum.Font.GothamBold
+        sBadge.TextSize=9 sBadge.BorderSizePixel=0 sBadge.Visible=false Rnd(sBadge,4)
+        local wBadge=Instance.new("TextLabel",btn) wBadge.Size=UDim2.new(0,52,0,15) wBadge.Position=UDim2.new(1,-58,0,19)
+        wBadge.BackgroundColor3=C.BLUE wBadge.TextColor3=Color3.new(1,1,1) wBadge.Font=Enum.Font.GothamBold
+        wBadge.TextSize=9 wBadge.BorderSizePixel=0 wBadge.Visible=false Rnd(wBadge,4)
+        local fBadge=Instance.new("TextLabel",btn) fBadge.Size=UDim2.new(0,52,0,15) fBadge.Position=UDim2.new(1,-58,0,29)
+        fBadge.BackgroundColor3=Color3.fromRGB(140,30,30) fBadge.TextColor3=Color3.new(1,1,1) fBadge.Font=Enum.Font.GothamBold
+        fBadge.TextSize=9 fBadge.BorderSizePixel=0 fBadge.Visible=false Rnd(fBadge,4)
 
         local function RefreshBadges()
-            local d = _G.EquippedData[wp]
-            local s = d and d.Skin or "Default"
-            local w = d and d.Wrap or "None"
-            sBadge.Visible = s ~= "Default"
-            if sBadge.Visible then sBadge.Text = s:sub(1,7) end
-            wBadge.Visible = w ~= "None"
-            if wBadge.Visible then wBadge.Text = w:sub(1,7) end
+            local d=_G.EquippedData[wp]
+            local s=d and d.Skin or "Default"
+            local w=d and d.Wrap or "None"
+            local f=d and d.Finisher or "None"
+            sBadge.Visible=s~="Default" if sBadge.Visible then sBadge.Text=s:sub(1,7) end
+            wBadge.Visible=w~="None"    if wBadge.Visible then wBadge.Text=w:sub(1,7) end
+            fBadge.Visible=f~="None"    if fBadge.Visible then fBadge.Text="💀"..f:sub(1,4) end
         end
         RefreshBadges()
-
         btn.MouseButton1Click:Connect(function()
-            currentWeapon = wp
-            for _, b in pairs(wBtns) do b.BackgroundColor3 = C.CARD end
-            btn.BackgroundColor3 = C.SEL
-            RefreshRight()
-            RefreshBadges()
+            currentWeapon=wp
+            for _,b in pairs(wBtns) do b.BackgroundColor3=C.CARD end
+            btn.BackgroundColor3=C.SEL
+            RefreshRight() RefreshBadges()
         end)
     end
-    WScroll.CanvasSize = UDim2.new(0,0,0,WLayout.AbsoluteContentSize.Y+8)
+    WScroll.CanvasSize=UDim2.new(0,0,0,WLayout.AbsoluteContentSize.Y+8)
 
     SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
-        local t = SearchBox.Text:lower()
-        for wp, b in pairs(wBtns) do
-            b.Visible = t == "" or wp:lower():find(t, 1, true)
-        end
+        local t=SearchBox.Text:lower()
+        for wp,b in pairs(wBtns) do b.Visible=t=="" or wp:lower():find(t,1,true) end
     end)
 
     -- DRAG
     do
-        local dragging, dStart, sPos
-        TB.Active = true
+        local dragging,dStart,sPos
+        TB.Active=true
         TB.InputBegan:Connect(function(i)
-            if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging=true dStart=i.Position sPos=Main.Position end
+            if i.UserInputType==Enum.UserInputType.MouseButton1 then dragging=true dStart=i.Position sPos=Main.Position end
         end)
         TB.InputEnded:Connect(function(i)
-            if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging=false end
+            if i.UserInputType==Enum.UserInputType.MouseButton1 then dragging=false end
         end)
         UserInputService.InputChanged:Connect(function(i)
-            if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
-                local d = i.Position - dStart
-                Main.Position = UDim2.new(sPos.X.Scale, sPos.X.Offset+d.X, sPos.Y.Scale, sPos.Y.Offset+d.Y)
+            if dragging and i.UserInputType==Enum.UserInputType.MouseMovement then
+                local d=i.Position-dStart
+                Main.Position=UDim2.new(sPos.X.Scale,sPos.X.Offset+d.X,sPos.Y.Scale,sPos.Y.Offset+d.Y)
             end
         end)
     end
 
     -- TOGGLE KEY
-    UserInputService.InputBegan:Connect(function(i, g)
-        if not g and i.KeyCode == Enum.KeyCode.K then
-            Main.Visible = not Main.Visible
+    UserInputService.InputBegan:Connect(function(i,g)
+        if not g and i.KeyCode==Enum.KeyCode.K then
+            Main.Visible=not Main.Visible
             if not Main.Visible then pcall(function() SearchBox:ReleaseFocus() end) end
         end
     end)
 
-    print("[+] Aniha Skin Changer v4.0 ready. Press K to toggle.")
+    -- Initial damage color
+    task.delay(2, function() ApplyDamageColor(Color3.fromRGB(230,55,55)) end)
+    -- Initial outline hook
+    task.delay(2, function() ApplyOutlineSettings() end)
+
+    print("[+] Aniha Skin Changer v5.0 ready! Press K to toggle.")
 end)
