@@ -691,6 +691,8 @@ end
 -- ═══════════════════════════════════════════════
 local aimAssistConn = nil
 
+_G.AimAssist.TargetMode = _G.AimAssist.TargetMode or "Random" -- "Head" | "Torso" | "Random"
+
 local function ApplyHitboxExpand(on, size)
     _G.AimAssist.HitboxExpand = on
     _G.AimAssist.HitboxSize   = size or _G.AimAssist.HitboxSize
@@ -699,23 +701,32 @@ local function ApplyHitboxExpand(on, size)
 
     local function expandChar(char)
         if not char then return end
-        task.wait(0.3) -- wait for all parts to replicate
+        task.wait(0.3)
         pcall(function()
             for _, part in pairs(char:GetDescendants()) do
                 if part:IsA("BasePart") or part:IsA("MeshPart") then
                     local n = part.Name:lower()
-                    local isHitbox = n:find("torso") or n:find("root") or n:find("head")
-                    if isHitbox then
+                    if n:find("torso") or n:find("root") or n:find("head") then
                         if on then
+                            -- Store original size AND transparency before touching anything
                             if not part:GetAttribute("AnihaOrigSize") then
                                 part:SetAttribute("AnihaOrigSize", part.Size.X..","..part.Size.Y..","..part.Size.Z)
+                                part:SetAttribute("AnihaOrigTrans", part.Transparency)
                             end
                             part.Size = part.Size * (_G.AimAssist.HitboxSize or 2.5)
+                            -- Fully invisible — no ugly stretched avatar
+                            part.Transparency = 1
+                            part.LocalTransparencyModifier = 1
                         else
-                            local orig = part:GetAttribute("AnihaOrigSize")
-                            if orig then
-                                local s = orig:split(",")
+                            local origS = part:GetAttribute("AnihaOrigSize")
+                            local origT = part:GetAttribute("AnihaOrigTrans")
+                            if origS then
+                                local s = origS:split(",")
                                 if #s==3 then part.Size=Vector3.new(tonumber(s[1]),tonumber(s[2]),tonumber(s[3])) end
+                            end
+                            if origT then
+                                part.Transparency = origT
+                                part.LocalTransparencyModifier = 0
                             end
                         end
                     end
@@ -729,10 +740,15 @@ local function ApplyHitboxExpand(on, size)
         pcall(function()
             for _, part in pairs(char:GetDescendants()) do
                 if (part:IsA("BasePart") or part:IsA("MeshPart")) then
-                    local orig = part:GetAttribute("AnihaOrigSize")
-                    if orig then
-                        local s = orig:split(",")
+                    local origS = part:GetAttribute("AnihaOrigSize")
+                    local origT = part:GetAttribute("AnihaOrigTrans")
+                    if origS then
+                        local s = origS:split(",")
                         if #s==3 then part.Size=Vector3.new(tonumber(s[1]),tonumber(s[2]),tonumber(s[3])) end
+                    end
+                    if origT then
+                        part.Transparency = origT
+                        part.LocalTransparencyModifier = 0
                     end
                 end
             end
@@ -769,61 +785,63 @@ local function SetAimAssist(on)
     aimAssistConn = RunService.RenderStepped:Connect(function()
         pcall(function()
             if not _G.AimAssist.Enabled then return end
-            local cam     = workspace.CurrentCamera
-            local range   = _G.AimAssist.Range
-            local strength= _G.AimAssist.Strength  -- 0.1 – 2.0 scale
-            local mx, my  = mouse.X, mouse.Y
-            local vp      = cam.ViewportSize
-            local bestDist= range
-            local bestTarget = nil
-            local bestPart   = nil
+            local cam      = workspace.CurrentCamera
+            local range    = _G.AimAssist.Range
+            local strength = _G.AimAssist.Strength
+            local mx, my   = mouse.X, mouse.Y
+            local vp       = cam.ViewportSize
+            local bestDist = range
+            local bestPos  = nil  -- world-space snap point
 
             for _, plr in pairs(Players:GetPlayers()) do
                 if plr ~= player and plr.Character then
                     local char = plr.Character
                     local hum  = char:FindFirstChildOfClass("Humanoid")
                     if hum and hum.Health > 0 then
-                        -- Prefer head then upper torso then HRP
-                        local targets = {
-                            char:FindFirstChild("Head"),
-                            char:FindFirstChild("UpperTorso"),
-                            char:FindFirstChild("HumanoidRootPart"),
-                            char:FindFirstChild("Torso"),
-                        }
-                        for _, root in pairs(targets) do
-                            if root and root:IsA("BasePart") then
-                                local sPos, vis = cam:WorldToViewportPoint(root.Position)
-                                if vis then
-                                    local dx = sPos.X - mx
-                                    local dy = sPos.Y - my
-                                    local dist = math.sqrt(dx*dx + dy*dy)
-                                    if dist < bestDist then
-                                        bestDist   = dist
-                                        bestTarget = sPos
-                                        bestPart   = root
-                                    end
+                        local head      = char:FindFirstChild("Head")
+                        local upperTorso= char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
+                        -- Never use HumanoidRootPart — it's hip-level and pulls aim down
+
+                        -- Pick snap part based on TargetMode
+                        local mode = _G.AimAssist.TargetMode or "Random"
+                        local snapPart
+                        if mode == "Head" then
+                            snapPart = head
+                        elseif mode == "Torso" then
+                            snapPart = upperTorso
+                        else -- Random: flip per-player each frame — feels natural
+                            snapPart = (math.random(2)==1 and head and head or upperTorso)
+                                    or head or upperTorso
+                        end
+
+                        if snapPart and snapPart:IsA("BasePart") then
+                            -- Slight upward offset so it aims at center-mass/face not chin
+                            local snapWorld = snapPart.Position + Vector3.new(0,
+                                snapPart == head and 0.05 or 0.3, 0)
+                            local sPos, vis = cam:WorldToViewportPoint(snapWorld)
+                            if vis then
+                                local dx = sPos.X - mx
+                                local dy = sPos.Y - my
+                                local dist = math.sqrt(dx*dx + dy*dy)
+                                if dist < bestDist then
+                                    bestDist = dist
+                                    bestPos  = sPos
                                 end
-                                break  -- found a valid target part for this player
                             end
                         end
                     end
                 end
             end
 
-            if bestTarget then
-                -- strength 1-20 mapped to pull factor 0.05 – 0.85 per frame
-                local pull = math.clamp(strength * 0.055, 0.04, 0.92)
-                local newX = mx + (bestTarget.X - mx) * pull
-                local newY = my + (bestTarget.Y - my) * pull
+            if bestPos then
+                local pull = math.clamp(strength * 0.055, 0.04, 0.88)
+                local newX = mx + (bestPos.X - mx) * pull
+                local newY = my + (bestPos.Y - my) * pull
                 if newX > 0 and newX < vp.X and newY > 0 and newY < vp.Y then
                     pcall(function()
-                        local dx = newX - mx
-                        local dy = newY - my
-                        if mousemoverel then
-                            mousemoverel(dx, dy)
-                        elseif mouse_moverel then
-                            mouse_moverel(dx, dy)
-                        end
+                        local dx, dy = newX - mx, newY - my
+                        if mousemoverel       then mousemoverel(dx, dy)
+                        elseif mouse_moverel  then mouse_moverel(dx, dy) end
                     end)
                 end
             end
@@ -832,44 +850,43 @@ local function SetAimAssist(on)
 end
 
 -- ═══════════════════════════════════════════════
--- ROBUST REQUIRE
+-- FAST REQUIRE  (no getgc — that was the freeze)
 -- ═══════════════════════════════════════════════
-local function robust_require(module)
-    local mName = tostring(module)
-    local setidentity = setthreadidentity or set_thread_identity or (syn and syn.set_thread_identity) or (getgenv and getgenv().set_thread_identity)
-    local getidentity = getthreadidentity or get_thread_identity or (syn and syn.get_thread_identity) or (getgenv and getgenv().get_thread_identity)
-    if shared[mName] or _G[mName] then return shared[mName] or _G[mName] end
-    if getrenv and (getrenv()._G[mName] or getrenv().shared[mName]) then return getrenv()._G[mName] or getrenv().shared[mName] end
-    local old_id
-    pcall(function() if getidentity and setidentity then old_id = getidentity() setidentity(2) end end)
+local function tryRequire(module)
+    -- Attempt 1: elevated identity direct require
+    local setid = setthreadidentity or set_thread_identity or (syn and syn.set_thread_identity)
+    local getid = getthreadidentity or get_thread_identity or (syn and syn.get_thread_identity)
+    local oldId
+    pcall(function() if getid and setid then oldId=getid() setid(2) end end)
     local ok, res = pcall(require, module)
-    if not ok and getgenv and getgenv().require then ok, res = pcall(getgenv().require, module) end
-    pcall(function() if setidentity and old_id then setidentity(old_id) end end)
-    if ok then return res end
-    local getupvalues = debug.getupvalues or getupvalues
-    for _, api in pairs({getgc, getregistry, debug.getregistry}) do
-        if type(api) == "function" then
-            local s, objs = pcall(api, true)
-            if s and type(objs) == "table" then
-                for _, v in pairs(objs) do
-                    if type(v) == "table" then
-                        if mName:find("CosmeticLibrary") and (v.Cosmetics or rawget(v,"Cosmetics")) and (type(v.Equip)=="function" or type(v.GetSkins)=="function") then return v end
-                        if mName:find("ItemLibrary")     and (v.ViewModels or rawget(v,"ViewModels")) then return v end
-                        if mName:find("ClientViewModel") and (v.new or rawget(v,"new")) and (v.GetWrap or rawget(v,"GetWrap")) then return v end
-                        if mName:find("ReplicatedClass") and type(v.ToEnum)=="function" then return v end
-                    elseif type(v) == "function" and getupvalues then
-                        for _, upv in pairs(getupvalues(v)) do
-                            if type(upv)=="table" then
-                                if mName:find("CosmeticLibrary") and upv.Cosmetics and upv.Equip then return upv end
-                                if mName:find("ItemLibrary")     and upv.ViewModels then return upv end
-                            end
-                        end
-                    end
-                end
-            end
+    pcall(function() if setid and oldId then setid(oldId) end end)
+    if ok and res then return res end
+    -- Attempt 2: getgenv require
+    if getgenv and type(getgenv().require)=="function" then
+        ok, res = pcall(getgenv().require, module)
+        if ok and res then return res end
+    end
+    return nil
+end
+
+local function robust_require(module)
+    -- Fast env cache check first
+    local mName = tostring(module)
+    local envs = {shared, _G}
+    if getrenv then pcall(function() envs[#envs+1]=getrenv()._G envs[#envs+1]=getrenv().shared end) end
+    for _,env in pairs(envs) do
+        if type(env)=="table" then
+            local v = rawget(env, mName)
+            if v then return v end
         end
     end
-    warn("[!] Failed: "..mName)
+    -- Retry require up to 6 times, yielding between each — no getgc, no freeze
+    for attempt = 1, 6 do
+        local res = tryRequire(module)
+        if res then return res end
+        task.wait(0.5)
+    end
+    warn("[!] robust_require failed for: "..mName)
     return nil
 end
 
@@ -879,15 +896,17 @@ end
 task.spawn(function()
     task.wait(1.5)
     SetLoadStatus("Loading CosmeticLibrary...")
+    task.wait(0)
     local CosmeticLibrary, ItemLibrary, ReplicatedClass, ClientViewModel
     CosmeticLibrary = robust_require(ReplicatedStorage:WaitForChild("Modules",20):WaitForChild("CosmeticLibrary",20))
-    SetLoadStatus("Loading ItemLibrary...")
+    SetLoadStatus("Loading ItemLibrary...") task.wait(0)
     ItemLibrary     = robust_require(ReplicatedStorage.Modules:WaitForChild("ItemLibrary",20))
-    SetLoadStatus("Loading ReplicatedClass...")
+    SetLoadStatus("Loading ReplicatedClass...") task.wait(0)
     ReplicatedClass = robust_require(ReplicatedStorage.Modules:WaitForChild("ReplicatedClass",20))
-    SetLoadStatus("Loading ClientViewModel...")
+    SetLoadStatus("Loading ClientViewModel...") task.wait(0)
     local Modules   = player.PlayerScripts:WaitForChild("Modules",15)
     robust_require(Modules:WaitForChild("ClientReplicatedClasses",15):WaitForChild("ClientFighter",15):WaitForChild("ClientItem",15))
+    task.wait(0)
     ClientViewModel = robust_require(Modules.ClientReplicatedClasses.ClientFighter.ClientItem:WaitForChild("ClientViewModel",15))
 
     if not CosmeticLibrary or not ItemLibrary or not ClientViewModel or not ReplicatedClass then
@@ -895,8 +914,9 @@ task.spawn(function()
         warn("[!] Aniha: Core modules missing.") return
     end
     SetLoadStatus("Patching cosmetics...")
-
+    task.wait(0)
     PatchUnlockAll(CosmeticLibrary)
+    task.wait(0)
     FixRevolverSkin(CosmeticLibrary)
 
     local function getCosmeticData(name, cType)
@@ -999,6 +1019,7 @@ task.spawn(function()
     -- ════════════════════════════════════════════
     -- COLORS
     -- ════════════════════════════════════════════
+    SetLoadStatus("Building interface...") task.wait(0)
     local C = {
         BG     = Color3.fromRGB(10, 10, 14),
         PANEL  = Color3.fromRGB(16, 16, 22),
@@ -1373,31 +1394,66 @@ task.spawn(function()
         _G.AimAssist.Range = v
     end)
 
-    AimHeader("📦  HITBOX EXPANSION",7,C.CYAN)
+    -- Target mode picker
+    AimHeader("🎯  SNAP TARGET",5,C.ORANGE)
+    local modeRow=Instance.new("Frame",AimScroll)
+    modeRow.Size=UDim2.new(1,-8,0,52) modeRow.BackgroundColor3=C.CARD
+    modeRow.BorderSizePixel=0 modeRow.LayoutOrder=6 Rnd(modeRow,8) Str(modeRow,C.SEP,1)
+    local modeLb=Instance.new("TextLabel",modeRow) modeLb.Size=UDim2.new(0,160,0,22) modeLb.Position=UDim2.new(0,14,0,6)
+    modeLb.BackgroundTransparency=1 modeLb.Text="Snap-to target:" modeLb.TextColor3=C.TEXT
+    modeLb.Font=Enum.Font.GothamBold modeLb.TextSize=13 modeLb.TextXAlignment=Enum.TextXAlignment.Left
+    local modeSub=Instance.new("TextLabel",modeRow) modeSub.Size=UDim2.new(0,260,0,18) modeSub.Position=UDim2.new(0,14,0,28)
+    modeSub.BackgroundTransparency=1 modeSub.Text="Head=headshots  Torso=body  Random=mixed (natural)"
+    modeSub.TextColor3=C.DIM modeSub.Font=Enum.Font.Gotham modeSub.TextSize=10 modeSub.TextXAlignment=Enum.TextXAlignment.Left
+    -- Three mode buttons
+    local modes = {"Head","Torso","Random"}
+    local modeColors = {C.RED, C.BLUE, C.ORANGE}
+    local modeBtns = {}
+    local function setModeBtn(selected)
+        _G.AimAssist.TargetMode = selected
+        for _, info in pairs(modeBtns) do
+            info.btn.BackgroundColor3 = info.name==selected and info.col or C.CARD
+            info.btn.TextColor3       = info.name==selected and Color3.new(1,1,1) or C.DIM
+        end
+        Flash("🎯 Target: "..selected, selected==modes[1] and C.RED or selected==modes[2] and C.BLUE or C.ORANGE)
+    end
+    for i, mode in ipairs(modes) do
+        local mb=Instance.new("TextButton",modeRow)
+        mb.Size=UDim2.new(0,80,0,28) mb.Position=UDim2.new(1,-268+(i-1)*88,0.5,-14)
+        mb.BackgroundColor3 = mode=="Random" and C.ORANGE or C.CARD
+        mb.TextColor3 = mode=="Random" and Color3.new(1,1,1) or C.DIM
+        mb.Text=mode mb.Font=Enum.Font.GothamBold mb.TextSize=12
+        mb.BorderSizePixel=0 mb.AutoButtonColor=false
+        Rnd(mb,6) Str(mb,C.SEP,1)
+        modeBtns[i]={btn=mb, name=mode, col=modeColors[i]}
+        mb.MouseButton1Click:Connect(function() setModeBtn(mode) end)
+    end
+
+    AimHeader("📦  HITBOX EXPANSION",9,C.CYAN)
 
     -- Hitbox expand toggle
     local hbState = false
-    local setHbToggle = AimToggle(AimScroll,"Expand Player Hitboxes","Makes enemy colliders slightly larger — easier to register hits",8,function(on)
+    local setHbToggle = AimToggle(AimScroll,"Expand Player Hitboxes","Invisible hitbox bubbles around enemies — easier to land hits",10,function(on)
         hbState = on
         ApplyHitboxExpand(on, _G.AimAssist.HitboxSize)
         Flash(on and "📦 Hitbox Expand ON" or "📦 Hitbox Expand OFF", C.CYAN)
     end, C.CYAN)
 
     -- Hitbox size slider
-    AimSlider("Hitbox Expand Size","Multiplier on enemy hitbox parts (15=1.5x  25=2.5x  50=5x)",9,15,50,25,function(v)
+    AimSlider("Hitbox Expand Size","Multiplier on enemy hitbox parts (15=1.5x  25=2.5x  50=5x)",11,15,50,25,function(v)
         _G.AimAssist.HitboxSize = v/10
         if _G.AimAssist.HitboxExpand then ApplyHitboxExpand(true, v/10) end
     end)
 
-    AimHeader("ℹ️  HOW IT WORKS",10,C.DIM)
+    AimHeader("ℹ️  HOW IT WORKS",12,C.DIM)
     local infoCard=Instance.new("Frame",AimScroll)
     infoCard.Size=UDim2.new(1,-8,0,90) infoCard.BackgroundColor3=C.CARD
-    infoCard.BorderSizePixel=0 infoCard.LayoutOrder=11 Rnd(infoCard,8) Str(infoCard,C.SEP,1)
+    infoCard.BorderSizePixel=0 infoCard.LayoutOrder=13 Rnd(infoCard,8) Str(infoCard,C.SEP,1)
     local infoTxt=Instance.new("TextLabel",infoCard)
     infoTxt.Size=UDim2.new(1,-20,1,-10) infoTxt.Position=UDim2.new(0,10,0,5)
     infoTxt.BackgroundTransparency=1 infoTxt.TextColor3=C.DIM infoTxt.TextWrapped=true
     infoTxt.Font=Enum.Font.Gotham infoTxt.TextSize=12 infoTxt.TextXAlignment=Enum.TextXAlignment.Left
-    infoTxt.Text="Aim Assist snaps your cursor toward the nearest visible enemy. Strength 1–10 is a learning aid. 11–20 becomes very aggressive. Detection Range is the screen-pixel radius to scan.\n\nHitbox Expand scales enemy collision boxes so it's easier to register hits. Requires an executor with mousemoverel support."
+    infoTxt.Text="Aim Assist snaps to Head, Torso, or randomly switches between the two (natural feel). HumanoidRootPart is never targeted — no more snapping to feet. Hitbox Expand is fully invisible. Requires mousemoverel support."
 
     -- ════════════════════════════════════════════
     -- PERF TAB CONTENTS
@@ -1709,6 +1765,7 @@ task.spawn(function()
     FinTab.MouseButton1Click:Connect(function()   SetTab("Finishers")   RefreshRight() end)
     AimTab.MouseButton1Click:Connect(function()   SetTab("AimAssist")   RefreshRight() end)
 
+    SetLoadStatus("Building weapon list...") task.wait(0)
     for wp in pairs(SkinLists) do
         local btn=Instance.new("TextButton")
         btn.Size=UDim2.new(1,-4,0,46) btn.BackgroundColor3=C.CARD btn.Text=""
