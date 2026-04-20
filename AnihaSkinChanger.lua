@@ -328,14 +328,14 @@ local function ApplyHideMuzzle(on)
         for _,v in pairs(workspace:GetDescendants()) do patchMuzzle(v) end
         _G.MuzzleConn  = workspace.DescendantAdded:Connect(function(v) if _G.HideMuzzle then task.defer(function() patchMuzzle(v) end) end end)
         _G.MuzzleConn2 = player.CharacterAdded:Connect(function(c) task.wait(0.1) for _,v in pairs(c:GetDescendants()) do if _G.HideMuzzle then patchMuzzle(v) end end end)
-        -- 20hz camera sweep — muzzle particles live in camera viewmodel
+        -- 10hz camera sweep — muzzle particles live in camera viewmodel
         _G.MuzzleLoop = task.spawn(function()
             while _G.HideMuzzle do
                 local c2 = workspace.CurrentCamera
                 if c2 then
                     for _,v in pairs(c2:GetDescendants()) do patchMuzzle(v) end
                 end
-                task.wait(0.05)
+                task.wait(0.1)
             end
         end)
     end)
@@ -368,7 +368,7 @@ local function ApplyHideBullets(on)
         _G.BulletConn = workspace.DescendantAdded:Connect(function(v)
             if _G.HideBullets then task.defer(function() patchBullet(v) end) end
         end)
-        -- 20hz sweep — catches fast projectiles without tanking FPS
+        -- 10hz sweep — catches fast projectiles without tanking FPS
         _G.BulletLoop = task.spawn(function()
             while _G.HideBullets do
                 for _,v in pairs(workspace:GetDescendants()) do
@@ -382,7 +382,7 @@ local function ApplyHideBullets(on)
                         end
                     end
                 end
-                task.wait(0.05)
+                task.wait(0.1)
             end
         end)
     end)
@@ -880,11 +880,11 @@ local function robust_require(module)
             if v then return v end
         end
     end
-    -- Retry require up to 6 times, yielding between each — no getgc, no freeze
-    for attempt = 1, 6 do
+    -- Retry require up to 3 times, yielding between each — no getgc, no freeze
+    for attempt = 1, 3 do
         local res = tryRequire(module)
         if res then return res end
-        task.wait(0.5)
+        task.wait(0.25)
     end
     warn("[!] robust_require failed for: "..mName)
     return nil
@@ -894,20 +894,47 @@ end
 -- MAIN TASK (requires modules then builds GUI)
 -- ═══════════════════════════════════════════════════════
 task.spawn(function()
-    task.wait(1.5)
-    SetLoadStatus("Loading CosmeticLibrary...")
+    task.wait(0.5)
+    SetLoadStatus("Loading game modules...")
     task.wait(0)
     local CosmeticLibrary, ItemLibrary, ReplicatedClass, ClientViewModel
-    CosmeticLibrary = robust_require(ReplicatedStorage:WaitForChild("Modules",20):WaitForChild("CosmeticLibrary",20))
-    SetLoadStatus("Loading ItemLibrary...") task.wait(0)
-    ItemLibrary     = robust_require(ReplicatedStorage.Modules:WaitForChild("ItemLibrary",20))
-    SetLoadStatus("Loading ReplicatedClass...") task.wait(0)
-    ReplicatedClass = robust_require(ReplicatedStorage.Modules:WaitForChild("ReplicatedClass",20))
-    SetLoadStatus("Loading ClientViewModel...") task.wait(0)
-    local Modules   = player.PlayerScripts:WaitForChild("Modules",15)
-    robust_require(Modules:WaitForChild("ClientReplicatedClasses",15):WaitForChild("ClientFighter",15):WaitForChild("ClientItem",15))
+
+    -- Load all modules in parallel to avoid sequential blocking
+    local loaded = 0
+    local total  = 5
+
+    local function onLoaded() loaded = loaded + 1 end
+
+    task.spawn(function()
+        CosmeticLibrary = robust_require(ReplicatedStorage:WaitForChild("Modules",10):WaitForChild("CosmeticLibrary",10))
+        onLoaded()
+    end)
+    task.spawn(function()
+        ItemLibrary = robust_require(ReplicatedStorage:WaitForChild("Modules",10):WaitForChild("ItemLibrary",10))
+        onLoaded()
+    end)
+    task.spawn(function()
+        ReplicatedClass = robust_require(ReplicatedStorage:WaitForChild("Modules",10):WaitForChild("ReplicatedClass",10))
+        onLoaded()
+    end)
+    local Modules = player.PlayerScripts:WaitForChild("Modules",8)
+    task.spawn(function()
+        robust_require(Modules:WaitForChild("ClientReplicatedClasses",8):WaitForChild("ClientFighter",8):WaitForChild("ClientItem",8))
+        onLoaded()
+    end)
+    task.spawn(function()
+        ClientViewModel = robust_require(Modules:WaitForChild("ClientReplicatedClasses",8):WaitForChild("ClientFighter",8):WaitForChild("ClientItem",8):WaitForChild("ClientViewModel",8))
+        onLoaded()
+    end)
+
+    -- Wait for all parallel loads to finish (timeout after 12s)
+    local elapsed = 0
+    while loaded < total and elapsed < 12 do
+        task.wait(0.1)
+        elapsed = elapsed + 0.1
+        SetLoadStatus("Loading modules... ("..loaded.."/"..total..")")
+    end
     task.wait(0)
-    ClientViewModel = robust_require(Modules.ClientReplicatedClasses.ClientFighter.ClientItem:WaitForChild("ClientViewModel",15))
 
     if not CosmeticLibrary or not ItemLibrary or not ClientViewModel or not ReplicatedClass then
         SetLoadStatus("❌ Core modules missing. Restart and retry.")
