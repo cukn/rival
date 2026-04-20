@@ -1119,7 +1119,7 @@ task.spawn(function()
     local SG = Instance.new("ScreenGui", player.PlayerGui)
     SG.ResetOnSpawn = false  SG.Name = "AnihaSkinChanger"
     SG.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    SG.DisplayOrder = 9999  -- render above ALL game UI including map selection
+    SG.DisplayOrder = 150   -- above game UI but safe for input handling
 
     local Main = Instance.new("Frame", SG)
     Main.Size = UDim2.new(0,1060,0,740)
@@ -1900,22 +1900,12 @@ task.spawn(function()
     end
 
     -- TOGGLE KEY
-    -- Note: 'g' (processed) check removed so K works even when game has input focus (first person)
-    local savedMouseBehavior = nil
     local function openMenu()
         Main.Visible = true
-        -- Unlock mouse so it can click the GUI in first person / mouse-locked modes
-        savedMouseBehavior = UserInputService.MouseBehavior
-        pcall(function() UserInputService.MouseBehavior = Enum.MouseBehavior.Default end)
-        pcall(function() UserInputService.MouseIconEnabled = true end)
     end
     local function closeMenu()
         Main.Visible = false
         pcall(function() SearchBox:ReleaseFocus() end)
-        -- Restore whatever mouse mode the game was using
-        if savedMouseBehavior then
-            pcall(function() UserInputService.MouseBehavior = savedMouseBehavior end)
-        end
     end
     UserInputService.InputBegan:Connect(function(i, _)
         if i.KeyCode == Enum.KeyCode.K then
@@ -1934,7 +1924,7 @@ task.spawn(function()
     SetLoadStatus("Ready!")
     task.wait(0.35)
     pcall(function() LoadSG:Destroy() end)
-    openMenu()
+    Main.Visible = false
 
     print("[+] Aniha Skin Changer v5.0 ready! Press K to toggle.")
 end)
