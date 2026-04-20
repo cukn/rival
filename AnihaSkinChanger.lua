@@ -1324,7 +1324,7 @@ task.spawn(function()
 
     -- Hitbox expand toggle
     local hbState = false
-    local setHbToggle = AimToggle("Expand Player Hitboxes","Makes enemy colliders slightly larger — easier to register hits",8,function(on)
+    local setHbToggle = AimToggle(AimScroll,"Expand Player Hitboxes","Makes enemy colliders slightly larger — easier to register hits",8,function(on)
         hbState = on
         ApplyHitboxExpand(on, _G.AimAssist.HitboxSize)
         Flash(on and "📦 Hitbox Expand ON" or "📦 Hitbox Expand OFF", C.CYAN)
