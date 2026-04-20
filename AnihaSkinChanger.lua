@@ -104,7 +104,7 @@ end
 
 _G.PerfSettings = _G.PerfSettings or { DamageColor = Color3.fromRGB(255,50,50) }
 _G.OutlineSettings = _G.OutlineSettings or { Enabled=true, Color=Color3.fromRGB(255,80,80) }
-_G.AimAssist = _G.AimAssist or { Enabled=false, Strength=0.4, Range=80, HitboxExpand=false, HitboxSize=2.5 }
+_G.AimAssist = _G.AimAssist or { Enabled=false, Strength=0.4, Range=80, HitboxExpand=false, HitboxSize=2.5, SilentAimChance=0 }
 _G.WeaponHidden = _G.WeaponHidden or false
 _G.ArmsHidden   = _G.ArmsHidden   or false
 _G.HideMuzzle   = _G.HideMuzzle   or false
@@ -487,15 +487,20 @@ local function ApplyHideHUDSlots(on)
         end)
     end)
 end
-RunService.Heartbeat:Connect(function()
+-- Only run visibility loop if weapon/arms hiding is actually on
+local visibilityThrottle = 0
+RunService.Heartbeat:Connect(function(dt)
+    if not (_G.WeaponHidden or _G.ArmsHidden) then return end
+    visibilityThrottle = visibilityThrottle + dt
+    if visibilityThrottle < 0.016 then return end  -- ~60hz throttle
+    visibilityThrottle = 0
+    
     pcall(function()
         local char = player.Character
         local cam  = workspace.CurrentCamera
-        if _G.WeaponHidden then
-            if cam then
-                for _,v in pairs(cam:GetDescendants()) do
-                    if v:IsA("BasePart") or v:IsA("MeshPart") then v.LocalTransparencyModifier = 1 end
-                end
+        if _G.WeaponHidden and cam then
+            for _,v in pairs(cam:GetDescendants()) do
+                if v:IsA("BasePart") or v:IsA("MeshPart") then v.LocalTransparencyModifier = 1 end
             end
             if char then
                 for _,tool in pairs(char:GetChildren()) do
@@ -506,14 +511,12 @@ RunService.Heartbeat:Connect(function()
                     end
                 end
             end
-        elseif _G.ArmsHidden then
-            if cam then
-                for _,v in pairs(cam:GetDescendants()) do
-                    if v:IsA("BasePart") or v:IsA("MeshPart") then
-                        local n = v.Name:lower()
-                        if n:find("arm") or n:find("hand") or n:find("wrist") or n:find("lower") or n:find("upper") then
-                            v.LocalTransparencyModifier = 1
-                        end
+        elseif _G.ArmsHidden and cam then
+            for _,v in pairs(cam:GetDescendants()) do
+                if v:IsA("BasePart") or v:IsA("MeshPart") then
+                    local n = v.Name:lower()
+                    if n:find("arm") or n:find("hand") or n:find("wrist") or n:find("lower") or n:find("upper") then
+                        v.LocalTransparencyModifier = 1
                     end
                 end
             end
@@ -902,6 +905,72 @@ local function SetAimAssist(on)
         end
     end)
 end
+
+-- ═══════════════════════════════════════════════
+-- SILENT AIM CHANCE  (on click, chance to snap)
+-- ═══════════════════════════════════════════════
+local function getSilentAimTarget()
+    -- Quick scan for nearest valid target
+    local cam = workspace.CurrentCamera
+    if not cam then return nil end
+    
+    local bestDist = math.huge
+    local bestPos = nil
+    local bestPart = nil
+    local range = _G.AimAssist.Range
+    
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= player then
+            local char = plr.Character
+            if char then
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                if hum and hum.Health > 0 then
+                    local head = char:FindFirstChild("Head")
+                    local torso = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
+                    local snap = head or torso
+                    if snap and snap:IsA("BasePart") then
+                        local yOff = snap == head and (snap.Size.Y * 0.35) or 0.6
+                        local ok, sPos, vis = pcall(cam.WorldToViewportPoint, cam, snap.Position + Vector3.new(0, yOff, 0))
+                        if ok and vis then
+                            local dx = sPos.X - mouse.X
+                            local dy = sPos.Y - mouse.Y
+                            local distSq = dx*dx + dy*dy
+                            if distSq < bestDist then
+                                bestDist = distSq
+                                bestPos = sPos
+                                bestPart = snap
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    return bestPos and math.sqrt(bestDist) < range and bestPos or nil
+end
+
+UserInputService.InputBegan:Connect(function(input, _)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        -- Silent aim chance trigger on click
+        if _G.AimAssist.Enabled and _G.AimAssist.SilentAimChance > 0 then
+            local roll = math.random(1, 100)
+            if roll <= _G.AimAssist.SilentAimChance then
+                local silentPos = getSilentAimTarget()
+                if silentPos then
+                    local cam = workspace.CurrentCamera
+                    local dx = silentPos.X - mouse.X
+                    local dy = silentPos.Y - mouse.Y
+                    -- Instant snap to target on successful silent aim roll
+                    pcall(function()
+                        if mousemoverel then mousemoverel(dx, dy)
+                        elseif mouse_moverel then mouse_moverel(dx, dy) end
+                    end)
+                end
+            end
+        end
+    end
+end)
 
 -- ═══════════════════════════════════════════════
 -- FAST REQUIRE  (no getgc — that was the freeze)
@@ -1526,10 +1595,17 @@ task.spawn(function()
         if _G.AimAssist.HitboxExpand then ApplyHitboxExpand(true, v/10) end
     end)
 
-    AimHeader("ℹ️  HOW IT WORKS",12,C.DIM)
+    AimHeader("💥  SILENT AIM",12,C.CYAN)
+
+    AimSlider("Silent Aim Chance %","Chance per shot that aim will silently snap to target (0% = off, 100% = always)",13,0,100,0,function(v)
+        _G.AimAssist.SilentAimChance = v
+        Flash("💥 Silent Aim: "..v.."%", C.CYAN)
+    end)
+
+    AimHeader("ℹ️  HOW IT WORKS",14,C.DIM)
     local infoCard=Instance.new("Frame",AimScroll)
     infoCard.Size=UDim2.new(1,-8,0,90) infoCard.BackgroundColor3=C.CARD
-    infoCard.BorderSizePixel=0 infoCard.LayoutOrder=13 Rnd(infoCard,8) Str(infoCard,C.SEP,1)
+    infoCard.BorderSizePixel=0 infoCard.LayoutOrder=15 Rnd(infoCard,8) Str(infoCard,C.SEP,1)
     local infoTxt=Instance.new("TextLabel",infoCard)
     infoTxt.Size=UDim2.new(1,-20,1,-10) infoTxt.Position=UDim2.new(0,10,0,5)
     infoTxt.BackgroundTransparency=1 infoTxt.TextColor3=C.DIM infoTxt.TextWrapped=true
