@@ -151,7 +151,7 @@ print("[+] Aniha Skin Changer v5.0 loading...")
 -- LOADING OVERLAY
 -- ═══════════════════════════════════════════════
 local LoadSG = Instance.new("ScreenGui", player.PlayerGui)
-LoadSG.ResetOnSpawn = false  LoadSG.Name = "AnihaLoader"  LoadSG.DisplayOrder = 999
+LoadSG.ResetOnSpawn = false  LoadSG.Name = "AnihaLoader"
 local LoadFrame = Instance.new("Frame", LoadSG)
 LoadFrame.Size = UDim2.new(0,340,0,110)
 LoadFrame.Position = UDim2.new(0.5,-170,0.5,-55)
@@ -789,106 +789,117 @@ local function SetAimAssist(on)
     if aimAssistConn then aimAssistConn:Disconnect() aimAssistConn = nil end
     if not on then return end
 
-    -- Smoothing state — persists between frames
-    local smoothX, smoothY = 0, 0       -- current smooth velocity being applied
-    local lastMX, lastMY  = 0, 0       -- mouse position last frame (to detect player input)
+    -- Smoothing state
+    local smoothX, smoothY = 0, 0
+    local lastMX,  lastMY  = 0, 0
 
-    aimAssistConn = RunService.RenderStepped:Connect(function(dt)
-        pcall(function()
-            if not _G.AimAssist.Enabled then return end
-            local cam      = workspace.CurrentCamera
-            local range    = _G.AimAssist.Range
-            local strength = _G.AimAssist.Strength
-            local mx, my   = mouse.X, mouse.Y
-            local vp       = cam.ViewportSize
+    -- Cached target data — rebuilt every 0.1s instead of every frame
+    local cachedTargets = {}
+    local cacheTimer    = 0
+    local CACHE_RATE    = 0.1  -- seconds between full character rescans
 
-            -- Detect how fast the player is moving their mouse this frame
-            local playerVelX = mx - lastMX
-            local playerVelY = my - lastMY
-            lastMX, lastMY = mx, my
-            local playerSpeed = math.sqrt(playerVelX*playerVelX + playerVelY*playerVelY)
-
-            -- When the player is flicking fast, back off so we never fight them
-            -- Scale goes 0 (full assist) → 1 (no assist) as speed crosses threshold
-            local inputThreshold = 18  -- pixels/frame before we start backing off
-            local inputSuppression = math.clamp(playerSpeed / inputThreshold, 0, 1)
-            local assistScale = 1 - (inputSuppression * inputSuppression)  -- smooth curve
-
-            local bestDist = range
-            local bestPos  = nil
-
-            for _, plr in pairs(Players:GetPlayers()) do
-                if plr ~= player and plr.Character then
-                    local char = plr.Character
-                    local hum  = char:FindFirstChildOfClass("Humanoid")
+    local function rebuildCache()
+        local t = {}
+        local mode = _G.AimAssist.TargetMode or "Random"
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= player then
+                local char = plr.Character
+                if char then
+                    local hum = char:FindFirstChildOfClass("Humanoid")
                     if hum and hum.Health > 0 then
-                        local head       = char:FindFirstChild("Head")
-                        local upperTorso = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
-
-                        local mode = _G.AimAssist.TargetMode or "Random"
-                        local snapPart
-                        if mode == "Head" then
-                            snapPart = head
-                        elseif mode == "Torso" then
-                            snapPart = upperTorso
-                        else
-                            snapPart = (math.random(2)==1 and head or upperTorso) or head or upperTorso
+                        local head  = char:FindFirstChild("Head")
+                        local torso = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
+                        local snap
+                        if mode == "Head"  then snap = head
+                        elseif mode == "Torso" then snap = torso
+                        else snap = (math.random(2) == 1 and head or torso) or head or torso
                         end
-
-                        if snapPart and snapPart:IsA("BasePart") then
-                            local snapWorld = snapPart.Position + Vector3.new(0,
-                                snapPart == head and (snapPart.Size.Y * 0.35) or 0.6, 0)
-                            local sPos, vis = cam:WorldToViewportPoint(snapWorld)
-                            if vis then
-                                local dx   = sPos.X - mx
-                                local dy   = sPos.Y - my
-                                local dist = math.sqrt(dx*dx + dy*dy)
-                                if dist < bestDist then
-                                    bestDist = dist
-                                    bestPos  = sPos
-                                end
-                            end
+                        if snap and snap:IsA("BasePart") then
+                            local yOff = snap == head and (snap.Size.Y * 0.35) or 0.6
+                            t[#t+1] = { part = snap, yOff = yOff }
                         end
                     end
                 end
             end
+        end
+        cachedTargets = t
+    end
 
-            if bestPos then
-                -- Distance-based falloff: pull is strongest close to target, fades at range edge
-                local distRatio   = 1 - math.clamp(bestDist / range, 0, 1)
-                local falloff     = distRatio * distRatio  -- quadratic — feels natural
+    aimAssistConn = RunService.RenderStepped:Connect(function(dt)
+        if not _G.AimAssist.Enabled then return end
 
-                -- Base pull per frame, scaled by strength slider (1-20 → gentle to strong)
-                -- dt keeps it frame-rate independent
-                local basePull = (strength / 20) * 0.38 * falloff * assistScale
+        local cam = workspace.CurrentCamera
+        if not cam then return end
 
-                -- Target delta toward snap point
-                local targetDX = (bestPos.X - mx) * basePull
-                local targetDY = (bestPos.Y - my) * basePull
+        -- Throttle: rebuild cache every CACHE_RATE seconds, not every frame
+        cacheTimer = cacheTimer + dt
+        if cacheTimer >= CACHE_RATE then
+            cacheTimer = 0
+            rebuildCache()
+        end
 
-                -- Exponential smooth toward the target delta — this is what makes it "glide"
-                -- Higher = snappier, lower = floatier. 12 gives a smooth ~80ms ease-in.
-                local lerpSpeed = 12 * dt
-                smoothX = smoothX + (targetDX - smoothX) * lerpSpeed
-                smoothY = smoothY + (targetDY - smoothY) * lerpSpeed
+        local range    = _G.AimAssist.Range
+        local strength = _G.AimAssist.Strength
+        local mx, my   = mouse.X, mouse.Y
+        local vp       = cam.ViewportSize
 
-                -- Dead zone: ignore sub-pixel movements to avoid micro-jitter
-                if math.abs(smoothX) < 0.08 and math.abs(smoothY) < 0.08 then return end
+        -- Mouse velocity — back off when player is actively flicking
+        local pvx = mx - lastMX
+        local pvy = my - lastMY
+        lastMX, lastMY = mx, my
+        -- Squared speed avoids sqrt cost; compare against threshold²
+        local speedSq       = pvx*pvx + pvy*pvy
+        local threshSq      = 18 * 18
+        local suppression   = math.clamp(speedSq / threshSq, 0, 1)
+        local assistScale   = 1 - suppression  -- linear falloff is fine here
 
-                local newX = mx + smoothX
-                local newY = my + smoothY
-                if newX > 0 and newX < vp.X and newY > 0 and newY < vp.Y then
-                    pcall(function()
-                        if mousemoverel      then mousemoverel(smoothX, smoothY)
-                        elseif mouse_moverel then mouse_moverel(smoothX, smoothY) end
-                    end)
+        local bestDistSq = range * range  -- use squared distance — no sqrt needed
+        local bestPos    = nil
+
+        for i = 1, #cachedTargets do
+            local entry = cachedTargets[i]
+            local part  = entry.part
+            -- Skip if part got destroyed between cache rebuilds
+            if part and part.Parent then
+                local ok, sPos, vis = pcall(cam.WorldToViewportPoint, cam,
+                    part.Position + Vector3.new(0, entry.yOff, 0))
+                if ok and vis then
+                    local dx     = sPos.X - mx
+                    local dy     = sPos.Y - my
+                    local distSq = dx*dx + dy*dy
+                    if distSq < bestDistSq then
+                        bestDistSq = distSq
+                        bestPos    = sPos
+                    end
                 end
-            else
-                -- No target in range — decay smooth velocity so it doesn't lurch when one appears
-                smoothX = smoothX * 0.7
-                smoothY = smoothY * 0.7
             end
-        end)
+        end
+
+        if bestPos then
+            local dist      = math.sqrt(bestDistSq)
+            local distRatio = 1 - math.clamp(dist / range, 0, 1)
+            local falloff   = distRatio * distRatio
+            local basePull  = (strength / 20) * 0.38 * falloff * assistScale
+            local targetDX  = (bestPos.X - mx) * basePull
+            local targetDY  = (bestPos.Y - my) * basePull
+            local lerpSpeed = 12 * dt
+            smoothX = smoothX + (targetDX - smoothX) * lerpSpeed
+            smoothY = smoothY + (targetDY - smoothY) * lerpSpeed
+
+            if math.abs(smoothX) < 0.08 and math.abs(smoothY) < 0.08 then return end
+
+            local newX = mx + smoothX
+            local newY = my + smoothY
+            if newX > 0 and newX < vp.X and newY > 0 and newY < vp.Y then
+                pcall(function()
+                    if mousemoverel      then mousemoverel(smoothX, smoothY)
+                    elseif mouse_moverel then mouse_moverel(smoothX, smoothY) end
+                end)
+            end
+        else
+            smoothX = smoothX * 0.7
+            smoothY = smoothY * 0.7
+        end
     end)
 end
 
@@ -1119,7 +1130,6 @@ task.spawn(function()
     local SG = Instance.new("ScreenGui", player.PlayerGui)
     SG.ResetOnSpawn = false  SG.Name = "AnihaSkinChanger"
     SG.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    SG.DisplayOrder = 150   -- above game UI but safe for input handling
 
     local Main = Instance.new("Frame", SG)
     Main.Size = UDim2.new(0,1060,0,740)
@@ -1881,20 +1891,31 @@ task.spawn(function()
         for wp,b in pairs(wBtns) do b.Visible=t=="" or wp:lower():find(t,1,true) end
     end)
 
-    -- DRAG
+    -- DRAG (no Active=true — that sinks all game input and freezes camera)
     do
-        local dragging,dStart,sPos
-        TB.Active=true
+        local dragging, dStart, sPos
         TB.InputBegan:Connect(function(i)
-            if i.UserInputType==Enum.UserInputType.MouseButton1 then dragging=true dStart=i.Position sPos=Main.Position end
+            if i.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = true
+                dStart   = i.Position
+                sPos     = Main.Position
+            end
         end)
         TB.InputEnded:Connect(function(i)
-            if i.UserInputType==Enum.UserInputType.MouseButton1 then dragging=false end
+            if i.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = false
+            end
         end)
         UserInputService.InputChanged:Connect(function(i)
-            if dragging and i.UserInputType==Enum.UserInputType.MouseMovement then
-                local d=i.Position-dStart
-                Main.Position=UDim2.new(sPos.X.Scale,sPos.X.Offset+d.X,sPos.Y.Scale,sPos.Y.Offset+d.Y)
+            if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
+                local d = i.Position - dStart
+                Main.Position = UDim2.new(sPos.X.Scale, sPos.X.Offset + d.X, sPos.Y.Scale, sPos.Y.Offset + d.Y)
+            end
+        end)
+        -- Stop drag if mouse leaves window
+        UserInputService.InputEnded:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = false
             end
         end)
     end
