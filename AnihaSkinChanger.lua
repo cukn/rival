@@ -104,7 +104,7 @@ end
 
 _G.PerfSettings = _G.PerfSettings or { DamageColor = Color3.fromRGB(255,50,50) }
 _G.OutlineSettings = _G.OutlineSettings or { Enabled=true, Color=Color3.fromRGB(255,80,80) }
-_G.AimAssist = _G.AimAssist or { Enabled=false, Strength=0.4, Range=80, HitboxExpand=false, HitboxSize=1.5 }
+_G.AimAssist = _G.AimAssist or { Enabled=false, Strength=0.4, Range=80, HitboxExpand=false, HitboxSize=2.5 }
 _G.WeaponHidden = _G.WeaponHidden or false
 _G.ArmsHidden   = _G.ArmsHidden   or false
 _G.HideMuzzle   = _G.HideMuzzle   or false
@@ -146,6 +146,47 @@ local function LoadConfig()
 end
 LoadConfig()
 print("[+] Aniha Skin Changer v5.0 loading...")
+
+-- ═══════════════════════════════════════════════
+-- LOADING OVERLAY
+-- ═══════════════════════════════════════════════
+local LoadSG = Instance.new("ScreenGui", player.PlayerGui)
+LoadSG.ResetOnSpawn = false  LoadSG.Name = "AnihaLoader"  LoadSG.DisplayOrder = 999
+local LoadFrame = Instance.new("Frame", LoadSG)
+LoadFrame.Size = UDim2.new(0,340,0,110)
+LoadFrame.Position = UDim2.new(0.5,-170,0.5,-55)
+LoadFrame.BackgroundColor3 = Color3.fromRGB(10,10,14)
+LoadFrame.BorderSizePixel = 0
+Instance.new("UICorner",LoadFrame).CornerRadius=UDim.new(0,12)
+local _ls=Instance.new("UIStroke",LoadFrame) _ls.Color=Color3.fromRGB(220,40,40) _ls.Thickness=1.5
+local LoadTitle = Instance.new("TextLabel",LoadFrame)
+LoadTitle.Size=UDim2.new(1,-20,0,32) LoadTitle.Position=UDim2.new(0,10,0,10)
+LoadTitle.BackgroundTransparency=1 LoadTitle.Text="✦  ANIHA SKIN CHANGER  v5.0"
+LoadTitle.TextColor3=Color3.new(1,1,1) LoadTitle.Font=Enum.Font.GothamBlack LoadTitle.TextSize=15
+local LoadStatus = Instance.new("TextLabel",LoadFrame)
+LoadStatus.Size=UDim2.new(1,-20,0,22) LoadStatus.Position=UDim2.new(0,10,0,42)
+LoadStatus.BackgroundTransparency=1 LoadStatus.Text="Connecting to game modules..."
+LoadStatus.TextColor3=Color3.fromRGB(180,100,100) LoadStatus.Font=Enum.Font.Gotham LoadStatus.TextSize=13
+local LoadTrack = Instance.new("Frame",LoadFrame)
+LoadTrack.Size=UDim2.new(1,-20,0,6) LoadTrack.Position=UDim2.new(0,10,0,72)
+LoadTrack.BackgroundColor3=Color3.fromRGB(30,30,40) LoadTrack.BorderSizePixel=0
+Instance.new("UICorner",LoadTrack).CornerRadius=UDim.new(0,3)
+local LoadFill = Instance.new("Frame",LoadTrack)
+LoadFill.Size=UDim2.new(0,0,1,0) LoadFill.BackgroundColor3=Color3.fromRGB(220,40,40) LoadFill.BorderSizePixel=0
+Instance.new("UICorner",LoadFill).CornerRadius=UDim.new(0,3)
+local loadPct = 0
+task.spawn(function()
+    while LoadSG and LoadSG.Parent do
+        loadPct = math.min(loadPct + 0.007, 0.9)
+        LoadFill.Size = UDim2.new(loadPct,0,1,0)
+        task.wait(0.05)
+    end
+end)
+local LoadHint = Instance.new("TextLabel",LoadFrame)
+LoadHint.Size=UDim2.new(1,-20,0,16) LoadHint.Position=UDim2.new(0,10,0,84)
+LoadHint.BackgroundTransparency=1 LoadHint.Text="Press K to toggle once loaded"
+LoadHint.TextColor3=Color3.fromRGB(80,80,100) LoadHint.Font=Enum.Font.Gotham LoadHint.TextSize=11
+local function SetLoadStatus(msg) pcall(function() LoadStatus.Text=msg end) end
 
 -- ═══════════════════════════════════════════════
 -- PERFORMANCE FUNCTIONS
@@ -260,10 +301,10 @@ end
 -- ═══════════════════════════════════════════════
 local function ApplyHideMuzzle(on)
     _G.HideMuzzle = on
-    if _G.MuzzleConn  then _G.MuzzleConn:Disconnect()  end
-    if _G.MuzzleConn2 then _G.MuzzleConn2:Disconnect() end
-    if _G.MuzzleLoop  then _G.MuzzleLoop:Disconnect()  end
-    local MUZZLE_KEYS = {"muzzle","flash","fire","spark","shoot","shot","emit","blast","bang","gun","shoot","effect","vfx","fx","light"}
+    if _G.MuzzleConn  then _G.MuzzleConn:Disconnect()  _G.MuzzleConn=nil  end
+    if _G.MuzzleConn2 then _G.MuzzleConn2:Disconnect() _G.MuzzleConn2=nil end
+    if _G.MuzzleLoop  then task.cancel(_G.MuzzleLoop)  _G.MuzzleLoop=nil  end
+    local MUZZLE_KEYS = {"muzzle","flash","fire","spark","shoot","shot","emit","blast","bang","gun","effect","vfx","fx","light"}
     local function isMuzzle(n)
         for _,k in ipairs(MUZZLE_KEYS) do if n:find(k) then return true end end
         return false
@@ -273,9 +314,8 @@ local function ApplyHideMuzzle(on)
         if isMuzzle(n) then
             if v:IsA("ParticleEmitter") or v:IsA("PointLight") or v:IsA("SpotLight") or v:IsA("SurfaceLight") or v:IsA("Beam") or v:IsA("Trail") then
                 v.Enabled = not on
-                if v:IsA("PointLight") or v:IsA("SpotLight") or v:IsA("SurfaceLight") then
-                    v.Brightness = on and 0 or (v:GetAttribute("AnihaOrigBright") or 1)
-                    if not v:GetAttribute("AnihaOrigBright") then v:SetAttribute("AnihaOrigBright", v.Brightness) end
+                if on and (v:IsA("PointLight") or v:IsA("SpotLight") or v:IsA("SurfaceLight")) then
+                    v.Brightness = 0
                 end
             end
         end
@@ -288,20 +328,23 @@ local function ApplyHideMuzzle(on)
         for _,v in pairs(workspace:GetDescendants()) do patchMuzzle(v) end
         _G.MuzzleConn  = workspace.DescendantAdded:Connect(function(v) if _G.HideMuzzle then task.defer(function() patchMuzzle(v) end) end end)
         _G.MuzzleConn2 = player.CharacterAdded:Connect(function(c) task.wait(0.1) for _,v in pairs(c:GetDescendants()) do if _G.HideMuzzle then patchMuzzle(v) end end end)
-        -- RunService loop to catch rapid-spawn particles each frame
-        _G.MuzzleLoop  = RunService.Heartbeat:Connect(function()
-            if not _G.HideMuzzle then return end
-            local c2 = workspace.CurrentCamera
-            if c2 then for _,v in pairs(c2:GetDescendants()) do patchMuzzle(v) end end
+        -- 20hz camera sweep — muzzle particles live in camera viewmodel
+        _G.MuzzleLoop = task.spawn(function()
+            while _G.HideMuzzle do
+                local c2 = workspace.CurrentCamera
+                if c2 then
+                    for _,v in pairs(c2:GetDescendants()) do patchMuzzle(v) end
+                end
+                task.wait(0.05)
+            end
         end)
     end)
 end
 
 local function ApplyHideBullets(on)
     _G.HideBullets = on
-    if _G.BulletConn  then _G.BulletConn:Disconnect()  end
-    if _G.BulletConn2 then _G.BulletConn2:Disconnect() end
-    if _G.BulletLoop  then _G.BulletLoop:Disconnect()  end
+    if _G.BulletConn  then _G.BulletConn:Disconnect()  _G.BulletConn=nil  end
+    if _G.BulletLoop  then task.cancel(_G.BulletLoop)   _G.BulletLoop=nil  end
     local BULLET_KEYS = {"bullet","proj","pellet","ball","tracer","ray","shell","slug","round","shard","bolt","arrow","dart","missile","rocket","fragment","debris","particle"}
     local function isBullet(n)
         for _,k in ipairs(BULLET_KEYS) do if n:find(k) then return true end end
@@ -325,19 +368,21 @@ local function ApplyHideBullets(on)
         _G.BulletConn = workspace.DescendantAdded:Connect(function(v)
             if _G.HideBullets then task.defer(function() patchBullet(v) end) end
         end)
-        -- heartbeat loop catches fast-moving projectiles every frame
-        _G.BulletLoop = RunService.Heartbeat:Connect(function()
-            if not _G.HideBullets then return end
-            for _,v in pairs(workspace:GetDescendants()) do
-                local n = v.Name:lower()
-                if isBullet(n) then
-                    if v:IsA("Trail") or v:IsA("Beam") or v:IsA("ParticleEmitter") then
-                        if v.Enabled then v.Enabled = false end
-                    elseif (v:IsA("BasePart") or v:IsA("MeshPart")) and v.LocalTransparencyModifier ~= 1 then
-                        v.LocalTransparencyModifier = 1
-                        v.Transparency = 1
+        -- 20hz sweep — catches fast projectiles without tanking FPS
+        _G.BulletLoop = task.spawn(function()
+            while _G.HideBullets do
+                for _,v in pairs(workspace:GetDescendants()) do
+                    local n = v.Name:lower()
+                    if isBullet(n) then
+                        if v:IsA("Trail") or v:IsA("Beam") or v:IsA("ParticleEmitter") then
+                            if v.Enabled then v.Enabled = false end
+                        elseif (v:IsA("BasePart") or v:IsA("MeshPart")) and v.LocalTransparencyModifier ~= 1 then
+                            v.LocalTransparencyModifier = 1
+                            v.Transparency = 1
+                        end
                     end
                 end
+                task.wait(0.05)
             end
         end)
     end)
@@ -649,68 +694,70 @@ local aimAssistConn = nil
 local function ApplyHitboxExpand(on, size)
     _G.AimAssist.HitboxExpand = on
     _G.AimAssist.HitboxSize   = size or _G.AimAssist.HitboxSize
-    if _G.HitboxConn then _G.HitboxConn:Disconnect() end
-    local function patchHitbox(char)
+    if _G.HitboxConn  then _G.HitboxConn:Disconnect()  _G.HitboxConn=nil  end
+    if _G.HitboxConn2 then _G.HitboxConn2:Disconnect() _G.HitboxConn2=nil end
+
+    local function expandChar(char)
         if not char then return end
-        for _, part in pairs(char:GetDescendants()) do
-            if part:IsA("BasePart") or part:IsA("MeshPart") then
-                local n = part.Name:lower()
-                -- Expand torso / head / limb hitboxes
-                if n:find("torso") or n:find("root") or n:find("head") or n:find("upper") or n:find("lower") or n:find("arm") or n:find("leg") then
-                    if on then
-                        if not part:GetAttribute("AnihaOrigSize") then
-                            part:SetAttribute("AnihaOrigSize", tostring(part.Size))
-                        end
-                        local orig = part:GetAttribute("AnihaOrigSize")
-                        if orig then
-                            local s = orig:split(", ")
-                            if #s == 3 then
-                                local os = Vector3.new(tonumber(s[1]),tonumber(s[2]),tonumber(s[3]))
-                                part.Size = os * (_G.AimAssist.HitboxSize or 1.5)
+        task.wait(0.3) -- wait for all parts to replicate
+        pcall(function()
+            for _, part in pairs(char:GetDescendants()) do
+                if part:IsA("BasePart") or part:IsA("MeshPart") then
+                    local n = part.Name:lower()
+                    local isHitbox = n:find("torso") or n:find("root") or n:find("head")
+                    if isHitbox then
+                        if on then
+                            if not part:GetAttribute("AnihaOrigSize") then
+                                part:SetAttribute("AnihaOrigSize", part.Size.X..","..part.Size.Y..","..part.Size.Z)
                             end
-                        end
-                    else
-                        local orig = part:GetAttribute("AnihaOrigSize")
-                        if orig then
-                            local s = orig:split(", ")
-                            if #s == 3 then
-                                part.Size = Vector3.new(tonumber(s[1]),tonumber(s[2]),tonumber(s[3]))
+                            part.Size = part.Size * (_G.AimAssist.HitboxSize or 2.5)
+                        else
+                            local orig = part:GetAttribute("AnihaOrigSize")
+                            if orig then
+                                local s = orig:split(",")
+                                if #s==3 then part.Size=Vector3.new(tonumber(s[1]),tonumber(s[2]),tonumber(s[3])) end
                             end
                         end
                     end
                 end
             end
-        end
+        end)
     end
-    pcall(function()
-        for _, plr in pairs(Players:GetPlayers()) do
-            if plr ~= player then patchHitbox(plr.Character) end
-        end
-        if on then
-            _G.HitboxConn = RunService.Heartbeat:Connect(function()
-                if not _G.AimAssist.HitboxExpand then return end
-                for _, plr in pairs(Players:GetPlayers()) do
-                    if plr ~= player and plr.Character then
-                        for _, part in pairs(plr.Character:GetDescendants()) do
-                            if (part:IsA("BasePart") or part:IsA("MeshPart")) then
-                                local n = part.Name:lower()
-                                if n:find("torso") or n:find("root") or n:find("head") then
-                                    local orig = part:GetAttribute("AnihaOrigSize")
-                                    if orig then
-                                        local s = orig:split(", ")
-                                        if #s == 3 then
-                                            local desired = Vector3.new(tonumber(s[1]),tonumber(s[2]),tonumber(s[3])) * _G.AimAssist.HitboxSize
-                                            if part.Size ~= desired then part.Size = desired end
-                                        end
-                                    else
-                                        part:SetAttribute("AnihaOrigSize", tostring(part.Size))
-                                    end
-                                end
-                            end
-                        end
+
+    local function restoreChar(char)
+        if not char then return end
+        pcall(function()
+            for _, part in pairs(char:GetDescendants()) do
+                if (part:IsA("BasePart") or part:IsA("MeshPart")) then
+                    local orig = part:GetAttribute("AnihaOrigSize")
+                    if orig then
+                        local s = orig:split(",")
+                        if #s==3 then part.Size=Vector3.new(tonumber(s[1]),tonumber(s[2]),tonumber(s[3])) end
                     end
                 end
+            end
+        end)
+    end
+
+    pcall(function()
+        if on then
+            for _, plr in pairs(Players:GetPlayers()) do
+                if plr ~= player then
+                    expandChar(plr.Character)
+                    _G["HBCharConn_"..plr.UserId] = plr.CharacterAdded:Connect(function(c) expandChar(c) end)
+                end
+            end
+            _G.HitboxConn  = Players.PlayerAdded:Connect(function(plr)
+                _G["HBCharConn_"..plr.UserId] = plr.CharacterAdded:Connect(function(c) expandChar(c) end)
             end)
+            _G.HitboxConn2 = Players.PlayerRemoving:Connect(function(plr)
+                if _G["HBCharConn_"..plr.UserId] then _G["HBCharConn_"..plr.UserId]:Disconnect() end
+            end)
+        else
+            for _, plr in pairs(Players:GetPlayers()) do
+                if plr ~= player then restoreChar(plr.Character) end
+                if _G["HBCharConn_"..plr.UserId] then _G["HBCharConn_"..plr.UserId]:Disconnect() end
+            end
         end
     end)
 end
@@ -831,17 +878,23 @@ end
 -- ═══════════════════════════════════════════════════════
 task.spawn(function()
     task.wait(1.5)
+    SetLoadStatus("Loading CosmeticLibrary...")
     local CosmeticLibrary, ItemLibrary, ReplicatedClass, ClientViewModel
     CosmeticLibrary = robust_require(ReplicatedStorage:WaitForChild("Modules",20):WaitForChild("CosmeticLibrary",20))
+    SetLoadStatus("Loading ItemLibrary...")
     ItemLibrary     = robust_require(ReplicatedStorage.Modules:WaitForChild("ItemLibrary",20))
+    SetLoadStatus("Loading ReplicatedClass...")
     ReplicatedClass = robust_require(ReplicatedStorage.Modules:WaitForChild("ReplicatedClass",20))
+    SetLoadStatus("Loading ClientViewModel...")
     local Modules   = player.PlayerScripts:WaitForChild("Modules",15)
     robust_require(Modules:WaitForChild("ClientReplicatedClasses",15):WaitForChild("ClientFighter",15):WaitForChild("ClientItem",15))
     ClientViewModel = robust_require(Modules.ClientReplicatedClasses.ClientFighter.ClientItem:WaitForChild("ClientViewModel",15))
 
     if not CosmeticLibrary or not ItemLibrary or not ClientViewModel or not ReplicatedClass then
+        SetLoadStatus("❌ Core modules missing. Restart and retry.")
         warn("[!] Aniha: Core modules missing.") return
     end
+    SetLoadStatus("Patching cosmetics...")
 
     PatchUnlockAll(CosmeticLibrary)
     FixRevolverSkin(CosmeticLibrary)
@@ -979,7 +1032,7 @@ task.spawn(function()
     local Main = Instance.new("Frame", SG)
     Main.Size = UDim2.new(0,1060,0,740)
     Main.Position = UDim2.new(0.5,-530,0.5,-370)
-    Main.BackgroundColor3 = C.BG  Main.BorderSizePixel = 0
+    Main.BackgroundColor3 = C.BG  Main.BorderSizePixel = 0  Main.Visible = false
     Rnd(Main,12)  Str(Main,Color3.fromRGB(50,50,70),1.5)
     Instance.new("UIGradient",Main).Color = ColorSequence.new({
         ColorSequenceKeypoint.new(0,Color3.fromRGB(14,12,22)),
@@ -1331,7 +1384,7 @@ task.spawn(function()
     end, C.CYAN)
 
     -- Hitbox size slider
-    AimSlider("Hitbox Expand Size","Multiplier applied to enemy part sizes (1.0 = normal, 2.0 = double)",9,10,30,15,function(v)
+    AimSlider("Hitbox Expand Size","Multiplier on enemy hitbox parts (15=1.5x  25=2.5x  50=5x)",9,15,50,25,function(v)
         _G.AimAssist.HitboxSize = v/10
         if _G.AimAssist.HitboxExpand then ApplyHitboxExpand(true, v/10) end
     end)
@@ -1730,6 +1783,14 @@ task.spawn(function()
     task.delay(2, function() ApplyDamageColor(Color3.fromRGB(230,55,55)) end)
     -- Initial outline hook
     task.delay(2, function() ApplyOutlineSettings() end)
+
+    -- Destroy loader, show main GUI
+    loadPct = 1
+    LoadFill.Size = UDim2.new(1,0,1,0)
+    SetLoadStatus("Ready!")
+    task.wait(0.35)
+    pcall(function() LoadSG:Destroy() end)
+    Main.Visible = true
 
     print("[+] Aniha Skin Changer v5.0 ready! Press K to toggle.")
 end)
