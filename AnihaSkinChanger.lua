@@ -220,29 +220,24 @@ end
 -- ═══════════════════════════════════════════════
 local function ApplyDamageColor(color)
     _G.PerfSettings.DamageColor = color
-    -- disconnect old hooks first
-    if _G.DamageColorConn  then _G.DamageColorConn:Disconnect()  end
-    if _G.DamageColorConn2 then _G.DamageColorConn2:Disconnect() end
+    -- Disconnect old hooks
+    if _G.DamageColorConn  then _G.DamageColorConn:Disconnect()  _G.DamageColorConn  = nil end
+    if _G.DamageColorConn2 then _G.DamageColorConn2:Disconnect() _G.DamageColorConn2 = nil end
     pcall(function()
+        -- Only match damage number labels (start with digit or minus+digit)
+        -- Avoid scanning PlayerGui entirely — that hooks every UI element and lags ranked
         local function tagLabel(v)
             if not v:IsA("TextLabel") then return end
-            -- hook every future text change on this label
-            if not v:GetAttribute("AnihaHooked") then
-                v:SetAttribute("AnihaHooked", true)
-                v:GetPropertyChangedSignal("Text"):Connect(function()
-                    local tt = v.Text or ""
-                    if tt:match("^%-?%d") then v.TextColor3 = _G.PerfSettings.DamageColor end
-                end)
-            end
             local t = v.Text or ""
             if t:match("^%-?%d") then v.TextColor3 = color end
+            -- Lightweight text-change hook — no SetAttribute, no property scan
+            v:GetPropertyChangedSignal("Text"):Connect(function()
+                local tt = v.Text or ""
+                if tt:match("^%-?%d") then v.TextColor3 = _G.PerfSettings.DamageColor end
+            end)
         end
-        for _, v in pairs(player.PlayerGui:GetDescendants()) do tagLabel(v) end
-        _G.DamageColorConn = player.PlayerGui.DescendantAdded:Connect(function(v)
-            task.defer(function() tagLabel(v) end)
-        end)
-        -- Also hook workspace damage numbers if they live there
-        _G.DamageColorConn2 = workspace.DescendantAdded:Connect(function(v)
+        -- Only watch workspace for new damage number objects (that's where they spawn)
+        _G.DamageColorConn = workspace.DescendantAdded:Connect(function(v)
             task.defer(function() tagLabel(v) end)
         end)
     end)
@@ -649,20 +644,31 @@ local function PatchUnlockAll(CosmeticLibrary)
         if CosmeticLibrary.IsOwned then CosmeticLibrary.IsOwned = function() return true end end
         if CosmeticLibrary.HasSkin  then CosmeticLibrary.HasSkin  = function() return true end end
         if CosmeticLibrary.OwnedSkins then
-            for wp, skins in pairs(SkinLists) do
+            -- Build a hash set for O(1) lookup instead of O(n) table.find each time
+            local owned = {}
+            for _, sk in ipairs(CosmeticLibrary.OwnedSkins) do owned[sk] = true end
+            for _, skins in pairs(SkinLists) do
                 for _, sk in ipairs(skins) do
-                    if not table.find(CosmeticLibrary.OwnedSkins, sk) then
+                    if not owned[sk] then
+                        owned[sk] = true
                         table.insert(CosmeticLibrary.OwnedSkins, sk)
                     end
                 end
             end
         end
         if CosmeticLibrary.Cosmetics then
+            -- Patch in batches so we don't freeze the thread on large tables
+            local batch = 0
             for _, data in pairs(CosmeticLibrary.Cosmetics) do
                 if type(data) == "table" then
                     data.Locked  = false
                     data.Owned   = true
                     data.IsOwned = true
+                end
+                batch = batch + 1
+                if batch >= 200 then
+                    batch = 0
+                    task.wait()
                 end
             end
         end
@@ -782,7 +788,12 @@ local function SetAimAssist(on)
     _G.AimAssist.Enabled = on
     if aimAssistConn then aimAssistConn:Disconnect() aimAssistConn = nil end
     if not on then return end
-    aimAssistConn = RunService.RenderStepped:Connect(function()
+
+    -- Smoothing state — persists between frames
+    local smoothX, smoothY = 0, 0       -- current smooth velocity being applied
+    local lastMX, lastMY  = 0, 0       -- mouse position last frame (to detect player input)
+
+    aimAssistConn = RunService.RenderStepped:Connect(function(dt)
         pcall(function()
             if not _G.AimAssist.Enabled then return end
             local cam      = workspace.CurrentCamera
@@ -790,38 +801,47 @@ local function SetAimAssist(on)
             local strength = _G.AimAssist.Strength
             local mx, my   = mouse.X, mouse.Y
             local vp       = cam.ViewportSize
+
+            -- Detect how fast the player is moving their mouse this frame
+            local playerVelX = mx - lastMX
+            local playerVelY = my - lastMY
+            lastMX, lastMY = mx, my
+            local playerSpeed = math.sqrt(playerVelX*playerVelX + playerVelY*playerVelY)
+
+            -- When the player is flicking fast, back off so we never fight them
+            -- Scale goes 0 (full assist) → 1 (no assist) as speed crosses threshold
+            local inputThreshold = 18  -- pixels/frame before we start backing off
+            local inputSuppression = math.clamp(playerSpeed / inputThreshold, 0, 1)
+            local assistScale = 1 - (inputSuppression * inputSuppression)  -- smooth curve
+
             local bestDist = range
-            local bestPos  = nil  -- world-space snap point
+            local bestPos  = nil
 
             for _, plr in pairs(Players:GetPlayers()) do
                 if plr ~= player and plr.Character then
                     local char = plr.Character
                     local hum  = char:FindFirstChildOfClass("Humanoid")
                     if hum and hum.Health > 0 then
-                        local head      = char:FindFirstChild("Head")
-                        local upperTorso= char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
-                        -- Never use HumanoidRootPart — it's hip-level and pulls aim down
+                        local head       = char:FindFirstChild("Head")
+                        local upperTorso = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
 
-                        -- Pick snap part based on TargetMode
                         local mode = _G.AimAssist.TargetMode or "Random"
                         local snapPart
                         if mode == "Head" then
                             snapPart = head
                         elseif mode == "Torso" then
                             snapPart = upperTorso
-                        else -- Random: flip per-player each frame — feels natural
-                            snapPart = (math.random(2)==1 and head and head or upperTorso)
-                                    or head or upperTorso
+                        else
+                            snapPart = (math.random(2)==1 and head or upperTorso) or head or upperTorso
                         end
 
                         if snapPart and snapPart:IsA("BasePart") then
-                            -- Slight upward offset so it aims at center-mass/face not chin
                             local snapWorld = snapPart.Position + Vector3.new(0,
-                                snapPart == head and 0.05 or 0.3, 0)
+                                snapPart == head and (snapPart.Size.Y * 0.35) or 0.6, 0)
                             local sPos, vis = cam:WorldToViewportPoint(snapWorld)
                             if vis then
-                                local dx = sPos.X - mx
-                                local dy = sPos.Y - my
+                                local dx   = sPos.X - mx
+                                local dy   = sPos.Y - my
                                 local dist = math.sqrt(dx*dx + dy*dy)
                                 if dist < bestDist then
                                     bestDist = dist
@@ -834,16 +854,39 @@ local function SetAimAssist(on)
             end
 
             if bestPos then
-                local pull = math.clamp(strength * 0.055, 0.04, 0.88)
-                local newX = mx + (bestPos.X - mx) * pull
-                local newY = my + (bestPos.Y - my) * pull
+                -- Distance-based falloff: pull is strongest close to target, fades at range edge
+                local distRatio   = 1 - math.clamp(bestDist / range, 0, 1)
+                local falloff     = distRatio * distRatio  -- quadratic — feels natural
+
+                -- Base pull per frame, scaled by strength slider (1-20 → gentle to strong)
+                -- dt keeps it frame-rate independent
+                local basePull = (strength / 20) * 0.38 * falloff * assistScale
+
+                -- Target delta toward snap point
+                local targetDX = (bestPos.X - mx) * basePull
+                local targetDY = (bestPos.Y - my) * basePull
+
+                -- Exponential smooth toward the target delta — this is what makes it "glide"
+                -- Higher = snappier, lower = floatier. 12 gives a smooth ~80ms ease-in.
+                local lerpSpeed = 12 * dt
+                smoothX = smoothX + (targetDX - smoothX) * lerpSpeed
+                smoothY = smoothY + (targetDY - smoothY) * lerpSpeed
+
+                -- Dead zone: ignore sub-pixel movements to avoid micro-jitter
+                if math.abs(smoothX) < 0.08 and math.abs(smoothY) < 0.08 then return end
+
+                local newX = mx + smoothX
+                local newY = my + smoothY
                 if newX > 0 and newX < vp.X and newY > 0 and newY < vp.Y then
                     pcall(function()
-                        local dx, dy = newX - mx, newY - my
-                        if mousemoverel       then mousemoverel(dx, dy)
-                        elseif mouse_moverel  then mouse_moverel(dx, dy) end
+                        if mousemoverel      then mousemoverel(smoothX, smoothY)
+                        elseif mouse_moverel then mouse_moverel(smoothX, smoothY) end
                     end)
                 end
+            else
+                -- No target in range — decay smooth velocity so it doesn't lurch when one appears
+                smoothX = smoothX * 0.7
+                smoothY = smoothY * 0.7
             end
         end)
     end)
@@ -1076,6 +1119,7 @@ task.spawn(function()
     local SG = Instance.new("ScreenGui", player.PlayerGui)
     SG.ResetOnSpawn = false  SG.Name = "AnihaSkinChanger"
     SG.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    SG.DisplayOrder = 9999  -- render above ALL game UI including map selection
 
     local Main = Instance.new("Frame", SG)
     Main.Size = UDim2.new(0,1060,0,740)
@@ -1856,10 +1900,26 @@ task.spawn(function()
     end
 
     -- TOGGLE KEY
-    UserInputService.InputBegan:Connect(function(i,g)
-        if not g and i.KeyCode==Enum.KeyCode.K then
-            Main.Visible=not Main.Visible
-            if not Main.Visible then pcall(function() SearchBox:ReleaseFocus() end) end
+    -- Note: 'g' (processed) check removed so K works even when game has input focus (first person)
+    local savedMouseBehavior = nil
+    local function openMenu()
+        Main.Visible = true
+        -- Unlock mouse so it can click the GUI in first person / mouse-locked modes
+        savedMouseBehavior = UserInputService.MouseBehavior
+        pcall(function() UserInputService.MouseBehavior = Enum.MouseBehavior.Default end)
+        pcall(function() UserInputService.MouseIconEnabled = true end)
+    end
+    local function closeMenu()
+        Main.Visible = false
+        pcall(function() SearchBox:ReleaseFocus() end)
+        -- Restore whatever mouse mode the game was using
+        if savedMouseBehavior then
+            pcall(function() UserInputService.MouseBehavior = savedMouseBehavior end)
+        end
+    end
+    UserInputService.InputBegan:Connect(function(i, _)
+        if i.KeyCode == Enum.KeyCode.K then
+            if Main.Visible then closeMenu() else openMenu() end
         end
     end)
 
@@ -1874,7 +1934,7 @@ task.spawn(function()
     SetLoadStatus("Ready!")
     task.wait(0.35)
     pcall(function() LoadSG:Destroy() end)
-    Main.Visible = true
+    openMenu()
 
     print("[+] Aniha Skin Changer v5.0 ready! Press K to toggle.")
 end)
