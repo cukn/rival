@@ -1,0 +1,740 @@
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
+local player = Players.LocalPlayer
+
+-- ═══════════════════════════════════════════════
+-- SKIN LISTS
+-- ═══════════════════════════════════════════════
+local SkinLists = {
+    ["Assault Rifle"] = {"Default", "AK-47", "AUG", "Tommy Gun", "Boneclaw Rifle", "Gingerbread AUG", "AKEY-47", "100K Visits", "10 Billion Visits", "Phoenix Rifle"},
+    ["Bow"] = {"Default", "Compound Bow", "Raven Bow", "Dream Bow", "Bat Bow", "Frostbite Bow", "Beloved Bow", "Balloon Bow", "Glorious Bow", "Key Bow", "Arch Bow"},
+    ["Burst Rifle"] = {"Default", "Electro Burst", "Aqua Burst", "FAMAS", "Spectral Burst", "Pine Burst"},
+    ["Crossbow"] = {"Default", "Pixel Crossbow", "Harpoon Crossbow", "Violin Crossbow", "Crossbone", "Frostbite Crossbow", "Arch Crossbow", "Glorious Crossbow"},
+    ["Distortion"] = {"Default", "Plasma Distortion", "Magma Distortion", "Cyber Distortion", "Expirement D15", "Sleighstortion"},
+    ["Energy Rifle"] = {"Default", "Hacker Rifle", "Hydro Rifle", "Void Rifle", "Soul Rifle", "New Years Energy Rifle"},
+    ["Flamethrower"] = {"Default", "Pixel Flamethrower", "Lamethrower", "Glitterthrower", "Jack O' Thrower", "Snowblower", "Keythrower", "Rainbowthrower"},
+    ["Grenade Launcher"] = {"Default", "Swashbuckler", "Uranium Launcher", "Gearnade Launcher", "Skull Grenade Launcher", "Snowball Launcher"},
+    ["Gunblade"] = {"Default", "Hyper Gunblade", "Crude Gunblade", "Gunsaw", "Boneblade", "Elf's Gunblade"},
+    ["Minigun"] = {"Default", "Lasergun 3000", "Pixel Minigun", "Fighter Jet", "Pumpkin Minigun", "Wrapped Minigun"},
+    ["Paintball Gun"] = {"Default", "Slime Gun", "Boba Gun", "Ketchup Gun", "Brain Gun", "Snowball Gun"},
+    ["RPG"] = {"Default", "Nuke Launcher", "Spaceship Launcher", "Squid Launcher", "Pumpkin Launcher", "Firework Launcher"},
+    ["Shotgun"] = {"Default", "Balloon Shotgun", "Hyper Shotgun", "Cactus Shotgun", "Broomstick", "Wrapped Shotgun"},
+    ["Sniper"] = {"Default", "Pixel Sniper", "Hyper Sniper", "Event Horizon", "Eyething Sniper", "Gingerbread Sniper", "Keyper", "Glorious Sniper"},
+    ["Daggers"] = {"Default", "Aces", "Paper Planes", "Shurikens", "Bat Daggers", "Cookies", "Crystal Daggers", "Keynais"},
+    ["Energy Pistols"] = {"Default", "Void Pistols", "Hydro Pistols", "Soul Pistols", "New Years Energy Pistols"},
+    ["Exogun"] = {"Default", "Singularity", "Raygun", "Repulsor", "Exogourd", "Midnight Festive Exogun"},
+    ["Flare Gun"] = {"Default", "Firework Gun", "Dynamite Gun", "Banana Flare", "Vexed Flare Gun", "Wrapped Flare Gun"},
+    ["Handgun"] = {"Default", "Blaster", "Hand Gun", "Gumball Handgun", "Pumpkin Handgun", "Gingerbread Handgun"},
+    ["Revolver"] = {"Default", "Desert Eagle", "Sheriff", "Peppergun", "Boneclaw Revolver", "Peppermint Sheriff"},
+    ["Shorty"] = {"Default", "Not So Shorty", "Lovely Shorty", "Balloon Shorty", "Demon Shorty", "Wrapped Shorty"},
+    ["Slingshot"] = {"Default", "Stick", "Goal Post", "Harp", "Boneshot", "Reindeer Slingshot", "Lucky Horseshoe"},
+    ["Spray"] = {"Default", "Lovely Spray", "Nail Gun", "Bottle Spray", "Boneclaw Spray", "Pine Spray", "Key Spray"},
+    ["Uzi"] = {"Default", "Water Uzi", "Electro Uzi", "Money Gun", "Demon Uzi", "Pine Uzi"},
+    ["Warper"] = {"Default", "Glitter Warper", "Arcane Warper", "Hotel Bell", "Experiment W4", "Frost Warper"},
+    ["Battle Axe"] = {"Default", "The Shred", "Ban Axe", "Cerulean Axe", "Mimic Axe", "Nordic Axe"},
+    ["Chainsaw"] = {"Default", "Blobsaw", "Handsaws", "Mega Drill", "Buzzsaw", "Festive Buzzsaw"},
+    ["Fists"] = {"Default", "Fist", "Boxing Gloves", "Fists of Hurt", "Brass Knuckles", "Festive Fists", "Glorious Fists", "Pumpkin Claws"},
+    ["Katana"] = {"Default", "Saber", "Lightning Bolt", "Stellar Katana", "Evil Trident", "New Years Katana", "Keytana", "Arch Katana", "Crystal Katana", "Pixel Katana", "Glorious Katana"},
+    ["Knife"] = {"Default", "Chancla", "Karambit", "Balisong", "Machete", "Candy Cane", "Keylisong", "Keyrambit", "Caladbolg"},
+    ["Riot Shield"] = {"Default", "Door", "Energy Shield", "Masterpiece", "Tombstone Shield", "Sled"},
+    ["Scythe"] = {"Default", "Scythe of Death", "Anchor", "Sakura Scythe", "Bat Scythe", "Cryo Scythe", "Crystal Scythe", "Keythe", "Bug Net", "Arch Scythe"},
+    ["Trowel"] = {"Default", "Plastic Shovel", "Garden Shovel", "Paintbrush", "Pumpkin Carver", "Snow Shovel"},
+    ["Flashbang"] = {"Default", "Disco Ball", "Camera", "Lightbulb", "Skullbang", "Shining Star"},
+    ["Freeze Ray"] = {"Default", "Temporal Ray", "Bubble Ray", "Gum Ray", "Spider Ray", "Wrapped Freeze Ray"},
+    ["Grenade"] = {"Default", "Whoopee Cushion", "Water Balloon", "Dynamite", "Soul Grenade", "Jingle Grenade"},
+    ["Jump Pad"] = {"Default", "Trampoline", "Bounce House", "Shady Chicken Sandwich", "Spider Web", "Jolly Man"},
+    ["Medkit"] = {"Default", "Sandwich", "Laptop", "Medkitty", "Bucket of Candy", "Milk & Cookies", "Box of Chocolates", "Briefcase"},
+    ["Molotov"] = {"Default", "Coffee", "Torch", "Lava Lamp", "Vexed Candle", "Hot Coals", "Arch Molotov"},
+    ["Satchel"] = {"Default", "Advanced Satchel", "Notebook Satchel", "Bag O' Money", "Potion Satchel", "Suspicious Gift"},
+    ["Smoke Grenade"] = {"Default", "Emoji Cloud", "Balance", "Hourglass", "Eyeball", "Snowglobe"},
+    ["Subspace Tripmine"] = {"Default", "Don't Press", "Spring", "DIY Tripmine", "Trick or Treat", "Dev In the Box", "Pot O Keys"},
+    ["War Horn"] = {"Default", "Trumpet", "Megaphone", "Air Horn", "Boneclaw Horn", "Mammoth Horn"},
+    ["Warpstone"] = {"Default", "Cyber Warpstone", "Teleport Disc", "Electropunk Warpstone", "Warpbone", "Warpstar"},
+    ["Permafrost"] = {"Default", "Snowman Permafrost", "Ice Permafrost", "Glorious Permafrost"},
+}
+
+local WrapList = {
+    "None", "Dark", "Gold", "Diamond", "Midas Touch", "Community Wrap", "Blush Wrapping", "Brain", "Crystalliz", 
+    "Damascus", "Black Damascus", ".exe wrap", "Groove", "Hollow Wrap", "Hesper", "Hyperdrive", 
+    "Gingerbread", "Neon Lights", "Hologram Arena", "Sunset", "Pink Lemonade", "Lovely Leopard", 
+    "Dawn", "Spectral", "Danger", "Termination", "Moonstone", "Starfall", "Black Glass", 
+    "Rift Wrap", "Starblaze", "Maganite", "Watermelon", "Reptile", "Water", "OranGG", "A5", "Cheese", 
+    "Nova", "Supernova", "Glass", "Mesh", "Meat Wrap", "Black Dark Wrap", "Cardinal", "Pixel Camo", 
+    "Nauseite", "Sensite", "Urban Camo", "Frosted", "Slime Wrap", "Carpet Wrap", "Cross Wrap", 
+    "Mainframe Wrap", "Honeycomb Wrap", "Black Opal Wrap", "Patriot", "PB&J Wrap", "Digital Camo", 
+    "Street Camo", "Ocean Camo", "Circuit", "Clouds", "Woven", "Ladybug"
+}
+
+-- ═══════════════════════════════════════════════
+-- SAVE / LOAD CONFIG
+-- ═══════════════════════════════════════════════
+local SAVE_FILE = "AnihaSkinConfig.json"
+
+local function SaveConfig()
+    local success, err = pcall(function()
+        local data = {}
+        for weapon, info in pairs(_G.EquippedData) do
+            data[weapon] = {Skin = info.Skin or "Default", Wrap = info.Wrap or "None"}
+        end
+        writefile(SAVE_FILE, game:GetService("HttpService"):JSONEncode(data))
+    end)
+    return success
+end
+
+local function LoadConfig()
+    local success, result = pcall(function()
+        if isfile(SAVE_FILE) then
+            local raw = readfile(SAVE_FILE)
+            return game:GetService("HttpService"):JSONDecode(raw)
+        end
+        return nil
+    end)
+    if success and result then
+        for weapon, info in pairs(result) do
+            if _G.EquippedData[weapon] then
+                _G.EquippedData[weapon].Skin = info.Skin or "Default"
+                _G.EquippedData[weapon].Wrap = info.Wrap or "None"
+            end
+        end
+        return true
+    end
+    return false
+end
+
+-- ═══════════════════════════════════════════════
+-- GLOBAL STATE
+-- ═══════════════════════════════════════════════
+_G.ActiveSelection = nil
+_G.ActiveTab = "Skins" -- Default tab
+_G.Telemetry = {}
+_G.EquippedData = _G.EquippedData or {}
+for weapon in pairs(SkinLists) do
+    if not _G.EquippedData[weapon] then
+        _G.EquippedData[weapon] = {Skin = "Default", Wrap = "None"}
+    end
+end
+
+LoadConfig()
+print("[+] Initializing Aniha Skin Changer v2.3 (TAB Edition)...")
+_G.AnihaVersion = "2.3-TAB"
+
+-- ═══════════════════════════════════════════════
+-- COSMETIC HOOKS & ROBUST INITIALIZATION
+-- ═══════════════════════════════════════════════
+local function robust_require(module)
+    local mName = tostring(module)
+    local setidentity = setthreadidentity or set_thread_identity or (syn and syn.set_thread_identity) or (fluxus and fluxus.set_thread_identity) or (getgenv and getgenv().set_thread_identity)
+    local getidentity = getthreadidentity or get_thread_identity or (syn and syn.get_thread_identity) or (fluxus and fluxus.set_thread_identity) or (getgenv and getgenv().get_thread_identity)
+    
+    if shared[mName] or _G[mName] then 
+        _G.Telemetry[mName] = "Global Cache Check"
+        return (shared[mName] or _G[mName]) 
+    end
+    if getrenv and (getrenv()._G[mName] or getrenv().shared[mName]) then 
+        _G.Telemetry[mName] = "Shared Environment Scan"
+        return (getrenv()._G[mName] or getrenv().shared[mName]) 
+    end
+
+    local old_identity
+    pcall(function() if getidentity and setidentity then old_identity = getidentity() setidentity(2) end end)
+    local success, result = pcall(require, module)
+    if not success and getgenv and getgenv().require then
+        local ok, res = pcall(getgenv().require, module)
+        if ok then success, result = true, res end
+    end
+    pcall(function() if setidentity and old_identity then setidentity(old_identity) end end)
+    if success then 
+        _G.Telemetry[mName] = "Identity Bypass (" .. (getidentity and getidentity() or "ID6") .. ")"
+        return result 
+    end
+
+    local getupvalues = debug.getupvalues or getupvalues
+    local scan_apis = {getgc, getregistry, debug.getregistry}
+    for _, api in pairs(scan_apis) do
+        if type(api) == "function" then
+            local ok, objects = pcall(api, true)
+            if ok and type(objects) == "table" then
+                for _, v in pairs(objects) do
+                    if type(v) == "table" then
+                        if mName:find("CosmeticLibrary") and (v.Cosmetics or rawget(v, "Cosmetics")) and (type(v.Equip) == "function" or type(v.GetSkins) == "function") then
+                            _G.Telemetry[mName] = "Heuristic Memory Scan (GC)"
+                            return v
+                        elseif mName:find("ItemLibrary") and (v.ViewModels or rawget(v, "ViewModels")) then
+                            _G.Telemetry[mName] = "Heuristic Memory Scan (GC)"
+                            return v
+                        elseif mName:find("ClientViewModel") and (v.new or rawget(v, "new")) and (v.GetWrap or rawget(v, "GetWrap")) then
+                            _G.Telemetry[mName] = "Heuristic Memory Scan (GC)"
+                            return v
+                        elseif mName:find("ReplicatedClass") and type(v.ToEnum) == "function" then
+                            _G.Telemetry[mName] = "Heuristic Memory Scan (GC)"
+                            return v
+                        end
+                    elseif type(v) == "function" and getupvalues then
+                        local ups = getupvalues(v)
+                        for _, upv in pairs(ups) do
+                            if type(upv) == "table" then
+                                if mName:find("CosmeticLibrary") and upv.Cosmetics and upv.Equip then 
+                                    _G.Telemetry[mName] = "Function Upvalue Scan"
+                                    return upv 
+                                end
+                                if mName:find("ItemLibrary") and upv.ViewModels then 
+                                    _G.Telemetry[mName] = "Function Upvalue Scan"
+                                    return upv 
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    _G.Telemetry[mName] = "NOT_FOUND"
+    warn("[!] Skin Changer: All retrieval methods failed for " .. mName)
+    return nil
+end
+
+
+task.spawn(function()
+    task.wait(1.5)
+    CosmeticLibrary = robust_require(ReplicatedStorage:WaitForChild("Modules", 20):WaitForChild("CosmeticLibrary", 20))
+    ItemLibrary = robust_require(ReplicatedStorage.Modules:WaitForChild("ItemLibrary", 20))
+    ReplicatedClass = robust_require(ReplicatedStorage.Modules:WaitForChild("ReplicatedClass", 20))
+
+    local Modules = player.PlayerScripts:WaitForChild("Modules", 15)
+    local ClientItem = robust_require(Modules:WaitForChild("ClientReplicatedClasses", 15):WaitForChild("ClientFighter", 15):WaitForChild("ClientItem", 15))
+    ClientViewModel = robust_require(Modules.ClientReplicatedClasses.ClientFighter.ClientItem:WaitForChild("ClientViewModel", 15))
+
+    if not CosmeticLibrary or not ItemLibrary or not ClientViewModel or not ReplicatedClass then
+        warn("[!] Skin Changer: Modules failed to load.")
+        return
+    end
+
+    local function getCosmeticData(name, cType)
+        local base = CosmeticLibrary.Cosmetics[name]
+        if not base then return nil end
+        local data = table.clone(base)
+        data.Name = name
+        data.Type = cType
+        if name == "AKEY-47" then
+            data.IsMythical = true
+            data.BundlePath = "Bundles"
+        elseif name:find("Gingerbread") then
+            data.BundlePath = "Festive Skin Case"
+        elseif name == "Evil Trident" or name == "Devil's Trident" then
+            data.DisplayName = "Evil Trident"
+        end
+        return data
+    end
+
+    local oldGetWrap = ClientViewModel.GetWrap
+    ClientViewModel.GetWrap = function(self)
+        local ok, result = pcall(function()
+            local weaponName = self.ClientItem and self.ClientItem.Name
+            if weaponName and _G.EquippedData[weaponName] then
+                local wrapName = _G.EquippedData[weaponName].Wrap
+                if wrapName and wrapName ~= "None" then
+                    return getCosmeticData(wrapName, "Wrap")
+                end
+            end
+        end)
+        if ok and result then return result end
+        return oldGetWrap(self)
+    end
+
+    local oldNew = ClientViewModel.new
+    ClientViewModel.new = function(replicatedData, clientItem)
+        pcall(function()
+            if not clientItem then return end
+            local weaponName = clientItem.Name
+            if not weaponName then return end
+            if not _G.EquippedData[weaponName] then return end
+
+            local cf = rawget(clientItem, "ClientFighter")
+                or (pcall(function() return clientItem.ClientFighter end) and clientItem.ClientFighter)
+            if not cf or cf.Player ~= player then return end
+
+            local selectedSkin = _G.EquippedData[weaponName].Skin
+            if not selectedSkin or selectedSkin == "Default" then return end
+
+            local cosData = getCosmeticData(selectedSkin, "Skin")
+            if not cosData then return end
+
+            local dataKey = ReplicatedClass:ToEnum("Data")
+            local skinKey = ReplicatedClass:ToEnum("Skin")
+            local nameKey = ReplicatedClass:ToEnum("Name")
+            replicatedData[dataKey] = replicatedData[dataKey] or {}
+            replicatedData[dataKey][skinKey] = cosData
+            replicatedData[dataKey][nameKey] = selectedSkin
+        end)
+
+        local vm = oldNew(replicatedData, clientItem)
+        task.delay(0.1, function()
+            pcall(function() if vm and vm._UpdateWrap then vm:_UpdateWrap() end end)
+        end)
+        return vm
+    end
+
+    local function ApplyAllSkins()
+        if not CosmeticLibrary then return end
+        for weapon, info in pairs(_G.EquippedData) do
+            if info.Skin ~= "Default" then
+                pcall(function() CosmeticLibrary.Equip(weapon, "Skin", info.Skin) end)
+            end
+        end
+        print("[+] Aniha: Skin state synced for " .. player.Name)
+    end
+
+    -- ═══════════════════════════════════════════════
+    -- GUI
+    -- ═══════════════════════════════════════════════
+    local ScreenGui = Instance.new("ScreenGui", player.PlayerGui)
+    ScreenGui.ResetOnSpawn = false
+    ScreenGui.Name = "AnihaSkinChanger"
+
+    local Main = Instance.new("Frame", ScreenGui)
+    Main.Size = UDim2.new(0, 950, 0, 700)
+    Main.Position = UDim2.new(0.5, -475, 0.5, -350)
+    Main.BackgroundColor3 = Color3.fromRGB(20, 20, 24)
+    Main.BorderSizePixel = 0
+    Main.Active = false
+
+    -- Title Bar
+    local Title = Instance.new("TextLabel", Main)
+    Title.Size = UDim2.new(1, 0, 0, 50)
+    Title.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+    Title.Text = "Aniha Skin Changer  •  [ K ] Toggle"
+    Title.TextColor3 = Color3.fromRGB(255, 80, 80)
+    Title.Font = Enum.Font.GothamBlack
+    Title.TextSize = 22
+    Title.BorderSizePixel = 0
+
+    -- ═══════════════════════════════════════════════
+    -- TAB BAR (Skins / Wraps)
+    -- ═══════════════════════════════════════════════
+    local TabBar = Instance.new("Frame", Main)
+    TabBar.Size = UDim2.new(1, 0, 0, 42)
+    TabBar.Position = UDim2.new(0, 0, 0, 50)
+    TabBar.BackgroundColor3 = Color3.fromRGB(24, 24, 30)
+    TabBar.BorderSizePixel = 0
+
+    local function MakeTab(text, xOffset)
+        local tab = Instance.new("TextButton", TabBar)
+        tab.Size = UDim2.new(0, 160, 1, -8)
+        tab.Position = UDim2.new(0, xOffset, 0, 4)
+        tab.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+        tab.Text = text
+        tab.TextColor3 = Color3.fromRGB(180, 180, 180)
+        tab.Font = Enum.Font.GothamBold
+        tab.TextSize = 15
+        tab.BorderSizePixel = 0
+        local corner = Instance.new("UICorner", tab)
+        corner.CornerRadius = UDim.new(0, 6)
+        return tab
+    end
+
+    local SkinsTab = MakeTab("🎨  Skins", 15)
+    local WrapsTab = MakeTab("🎁  Wraps", 185)
+
+    local function SetActiveTab(tabName)
+        _G.ActiveTab = tabName
+        if tabName == "Skins" then
+            SkinsTab.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
+            SkinsTab.TextColor3 = Color3.new(1, 1, 1)
+            WrapsTab.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+            WrapsTab.TextColor3 = Color3.fromRGB(180, 180, 180)
+        else
+            WrapsTab.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
+            WrapsTab.TextColor3 = Color3.new(1, 1, 1)
+            SkinsTab.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+            SkinsTab.TextColor3 = Color3.fromRGB(180, 180, 180)
+        end
+    end
+    SetActiveTab("Skins") -- default
+
+    -- ═══════════════════════════════════════════════
+    -- LEFT PANEL (Weapon List)
+    -- ═══════════════════════════════════════════════
+    local Left = Instance.new("Frame", Main)
+    Left.Size = UDim2.new(0, 280, 1, -152)
+    Left.Position = UDim2.new(0, 15, 0, 102)
+    Left.BackgroundColor3 = Color3.fromRGB(28, 28, 34)
+    Left.BorderSizePixel = 0
+
+    local WeaponSearch = Instance.new("TextBox", Left)
+    WeaponSearch.Size = UDim2.new(1, -20, 0, 35)
+    WeaponSearch.Position = UDim2.new(0, 10, 0, 10)
+    WeaponSearch.PlaceholderText = "Search weapon..."
+    WeaponSearch.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
+    WeaponSearch.TextColor3 = Color3.new(1, 1, 1)
+    WeaponSearch.Font = Enum.Font.Gotham
+    WeaponSearch.TextSize = 14
+    WeaponSearch.BorderSizePixel = 0
+    WeaponSearch.ClearTextOnFocus = false
+    WeaponSearch.Text = ""
+
+    local WeaponScroll = Instance.new("ScrollingFrame", Left)
+    WeaponScroll.Size = UDim2.new(1, -20, 1, -55)
+    WeaponScroll.Position = UDim2.new(0, 10, 0, 55)
+    WeaponScroll.BackgroundTransparency = 1
+    WeaponScroll.ScrollBarThickness = 6
+    WeaponScroll.BorderSizePixel = 0
+
+    local WeaponLayout = Instance.new("UIListLayout", WeaponScroll)
+    WeaponLayout.Padding = UDim.new(0, 6)
+    WeaponLayout.SortOrder = Enum.SortOrder.Name
+
+    -- ═══════════════════════════════════════════════
+    -- RIGHT PANEL
+    -- ═══════════════════════════════════════════════
+    local Right = Instance.new("Frame", Main)
+    Right.Size = UDim2.new(1, -310, 1, -152)
+    Right.Position = UDim2.new(0, 305, 0, 102)
+    Right.BackgroundColor3 = Color3.fromRGB(28, 28, 34)
+    Right.BorderSizePixel = 0
+
+    local SelectedLabel = Instance.new("TextLabel", Right)
+    SelectedLabel.Size = UDim2.new(1, -20, 0, 40)
+    SelectedLabel.Position = UDim2.new(0, 10, 0, 10)
+    SelectedLabel.BackgroundTransparency = 1
+    SelectedLabel.Text = "Select a weapon on the left"
+    SelectedLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    SelectedLabel.Font = Enum.Font.GothamBold
+    SelectedLabel.TextSize = 20
+
+    -- SKINS scroll (shown on Skins tab)
+    local SkinScroll = Instance.new("ScrollingFrame", Right)
+    SkinScroll.Size = UDim2.new(1, -20, 1, -70)
+    SkinScroll.Position = UDim2.new(0, 10, 0, 60)
+    SkinScroll.BackgroundTransparency = 1
+    SkinScroll.ScrollBarThickness = 8
+    SkinScroll.BorderSizePixel = 0
+    SkinScroll.Visible = true
+
+    local SkinGrid = Instance.new("UIGridLayout", SkinScroll)
+    SkinGrid.CellSize = UDim2.new(0, 130, 0, 155)
+    SkinGrid.CellPadding = UDim2.new(0, 15, 0, 15)
+
+    -- WRAPS scroll (shown on Wraps tab)
+    local WrapScroll = Instance.new("ScrollingFrame", Right)
+    WrapScroll.Size = UDim2.new(1, -20, 1, -70)
+    WrapScroll.Position = UDim2.new(0, 10, 0, 60)
+    WrapScroll.BackgroundTransparency = 1
+    WrapScroll.ScrollBarThickness = 8
+    WrapScroll.BorderSizePixel = 0
+    WrapScroll.Visible = false
+
+    local WrapGrid = Instance.new("UIGridLayout", WrapScroll)
+    WrapGrid.CellSize = UDim2.new(0, 130, 0, 50)
+    WrapGrid.CellPadding = UDim2.new(0, 10, 0, 10)
+
+    -- ═══════════════════════════════════════════════
+    -- TOOLBAR
+    -- ═══════════════════════════════════════════════
+    local Toolbar = Instance.new("Frame", Main)
+    Toolbar.Size = UDim2.new(1, 0, 0, 48)
+    Toolbar.Position = UDim2.new(0, 0, 1, -48)
+    Toolbar.BackgroundColor3 = Color3.fromRGB(26, 26, 32)
+    Toolbar.BorderSizePixel = 0
+
+    local StatusLabel = Instance.new("TextLabel", Toolbar)
+    StatusLabel.Size = UDim2.new(1, -310, 1, 0)
+    StatusLabel.Position = UDim2.new(0, 15, 0, 0)
+    StatusLabel.BackgroundTransparency = 1
+    StatusLabel.Text = "Ready  •  Config: AnihaSkinConfig.json"
+    StatusLabel.TextColor3 = Color3.fromRGB(140, 140, 160)
+    StatusLabel.Font = Enum.Font.Gotham
+    StatusLabel.TextSize = 13
+    StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+    local function MakeToolbarBtn(text, xPos, color)
+        local btn = Instance.new("TextButton", Toolbar)
+        btn.Size = UDim2.new(0, 140, 0, 32)
+        btn.Position = UDim2.new(1, xPos, 0.5, -16)
+        btn.BackgroundColor3 = color
+        btn.Text = text
+        btn.TextColor3 = Color3.new(1, 1, 1)
+        btn.Font = Enum.Font.GothamBold
+        btn.TextSize = 14
+        btn.BorderSizePixel = 0
+        local corner = Instance.new("UICorner", btn)
+        corner.CornerRadius = UDim.new(0, 4)
+        return btn
+    end
+
+    local SaveBtn = MakeToolbarBtn("💾  Save Config", -300, Color3.fromRGB(50, 130, 50))
+    local LoadBtn = MakeToolbarBtn("📂  Load Config", -150, Color3.fromRGB(60, 100, 180))
+
+    local function FlashStatus(msg, color)
+        StatusLabel.Text = msg
+        StatusLabel.TextColor3 = color or Color3.fromRGB(140, 200, 140)
+        task.delay(3, function()
+            StatusLabel.Text = "Ready  •  Config: AnihaSkinConfig.json"
+            StatusLabel.TextColor3 = Color3.fromRGB(140, 140, 160)
+        end)
+    end
+
+    SaveBtn.MouseButton1Click:Connect(function()
+        pcall(function()
+            if SaveConfig() then FlashStatus("✅ Config saved!", Color3.fromRGB(100, 220, 100))
+            else FlashStatus("❌ Save failed!", Color3.fromRGB(220, 80, 80)) end
+        end)
+    end)
+
+    LoadBtn.MouseButton1Click:Connect(function()
+        pcall(function()
+            if LoadConfig() then FlashStatus("✅ Config loaded!", Color3.fromRGB(100, 180, 255)) ApplyAllSkins()
+            else FlashStatus("❌ No config found!", Color3.fromRGB(220, 80, 80)) end
+        end)
+    end)
+
+    -- ═══════════════════════════════════════════════
+    -- HELPERS
+    -- ═══════════════════════════════════════════════
+    local function GetThumb(name)
+        local result = ""
+        pcall(function()
+            if ItemLibrary and ItemLibrary.ViewModels and ItemLibrary.ViewModels[name] then
+                local data = ItemLibrary.ViewModels[name]
+                if data.ImageHighResolution then result = data.ImageHighResolution return end
+                if data.Image then result = data.Image return end
+                if data.Thumbnail then result = data.Thumbnail return end
+            end
+            if CosmeticLibrary and CosmeticLibrary.Skins then
+                for _, tbl in pairs(CosmeticLibrary.Skins) do
+                    if tbl[name] then
+                        local data = tbl[name]
+                        if data.ImageHighResolution then result = data.ImageHighResolution return end
+                        if data.Image then result = data.Image return end
+                        if data.Thumbnail then result = data.Thumbnail return end
+                    end
+                end
+            end
+        end)
+        return result
+    end
+
+    local function EquipSkin(weapon, skin)
+        _G.EquippedData[weapon].Skin = skin
+        pcall(function() CosmeticLibrary.Equip(weapon, "Skin", skin) end)
+        SelectedLabel.Text = "✅ EQUIPPED: " .. weapon .. " — " .. skin
+    end
+
+    local function EquipWrap(weapon, wrap)
+        _G.EquippedData[weapon].Wrap = wrap
+        pcall(function() CosmeticLibrary.Equip(weapon, "Wrap", wrap) end)
+        SelectedLabel.Text = "✅ WRAP SET: " .. weapon .. " — " .. wrap
+    end
+
+    -- ═══════════════════════════════════════════════
+    -- POPULATE WRAPS for a weapon
+    -- ═══════════════════════════════════════════════
+    local function PopulateWraps(weapon)
+        for _, child in pairs(WrapScroll:GetChildren()) do
+            if child:IsA("TextButton") or child:IsA("ImageButton") then child:Destroy() end
+        end
+        for _, wrap in ipairs(WrapList) do
+            local wbtn = Instance.new("TextButton")
+            local isEquipped = _G.EquippedData[weapon] and _G.EquippedData[weapon].Wrap == wrap
+            wbtn.BackgroundColor3 = isEquipped and Color3.fromRGB(60, 130, 60) or Color3.fromRGB(35, 35, 42)
+            wbtn.Text = wrap
+            wbtn.TextColor3 = Color3.new(1, 1, 1)
+            wbtn.Font = Enum.Font.GothamSemibold
+            wbtn.TextSize = 13
+            wbtn.TextScaled = false
+            wbtn.BorderSizePixel = 0
+            wbtn.Parent = WrapScroll
+            local corner = Instance.new("UICorner", wbtn)
+            corner.CornerRadius = UDim.new(0, 4)
+            wbtn.MouseButton1Click:Connect(function()
+                for _, c in pairs(WrapScroll:GetChildren()) do
+                    if c:IsA("TextButton") then c.BackgroundColor3 = Color3.fromRGB(35, 35, 42) end
+                end
+                wbtn.BackgroundColor3 = Color3.fromRGB(60, 130, 60)
+                EquipWrap(weapon, wrap)
+            end)
+        end
+        WrapScroll.CanvasSize = UDim2.new(0, 0, 0, WrapGrid.AbsoluteContentSize.Y + 20)
+    end
+
+    -- ═══════════════════════════════════════════════
+    -- POPULATE SKINS for a weapon
+    -- ═══════════════════════════════════════════════
+    local function PopulateSkins(weapon)
+        for _, child in pairs(SkinScroll:GetChildren()) do
+            if child:IsA("ImageButton") then child:Destroy() end
+        end
+        for _, skin in ipairs(SkinLists[weapon]) do
+            local sbtn = Instance.new("ImageButton")
+            sbtn.BackgroundColor3 = (_G.EquippedData[weapon] and _G.EquippedData[weapon].Skin == skin) and Color3.fromRGB(60, 130, 60) or Color3.fromRGB(35, 35, 42)
+            sbtn.Image = GetThumb(skin)
+            sbtn.BorderSizePixel = 0
+            sbtn.Parent = SkinScroll
+            local lbl = Instance.new("TextLabel", sbtn)
+            lbl.Size = UDim2.new(1, 0, 0, 35)
+            lbl.Position = UDim2.new(0, 0, 1, -35)
+            lbl.BackgroundTransparency = 0.3
+            lbl.BackgroundColor3 = Color3.new(0, 0, 0)
+            lbl.Text = skin
+            lbl.TextColor3 = Color3.new(1, 1, 1)
+            lbl.Font = Enum.Font.Gotham
+            lbl.TextScaled = true
+            lbl.BorderSizePixel = 0
+            sbtn.MouseButton1Click:Connect(function()
+                for _, c in pairs(SkinScroll:GetChildren()) do
+                    if c:IsA("ImageButton") then c.BackgroundColor3 = Color3.fromRGB(35, 35, 42) end
+                end
+                sbtn.BackgroundColor3 = Color3.fromRGB(60, 130, 60)
+                EquipSkin(weapon, skin)
+            end)
+        end
+        SkinScroll.CanvasSize = UDim2.new(0, 0, 0, SkinGrid.AbsoluteContentSize.Y + 40)
+    end
+
+    -- ═══════════════════════════════════════════════
+    -- TAB SWITCHING LOGIC
+    -- ═══════════════════════════════════════════════
+    local currentWeapon = nil
+
+    local function RefreshRightPanel()
+        if not currentWeapon then return end
+        if _G.ActiveTab == "Skins" then
+            SkinScroll.Visible = true
+            WrapScroll.Visible = false
+            PopulateSkins(currentWeapon)
+        else
+            SkinScroll.Visible = false
+            WrapScroll.Visible = true
+            PopulateWraps(currentWeapon)
+        end
+    end
+
+    SkinsTab.MouseButton1Click:Connect(function()
+        SetActiveTab("Skins")
+        RefreshRightPanel()
+    end)
+
+    WrapsTab.MouseButton1Click:Connect(function()
+        SetActiveTab("Wraps")
+        RefreshRightPanel()
+    end)
+
+    -- ═══════════════════════════════════════════════
+    -- WEAPON BUTTONS
+    -- ═══════════════════════════════════════════════
+    local function MakeWeaponBtn(weapon)
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(1, -10, 0, 52)
+        btn.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
+        btn.Text = "   " .. weapon
+        btn.TextColor3 = Color3.new(1, 1, 1)
+        btn.TextXAlignment = Enum.TextXAlignment.Left
+        btn.Font = Enum.Font.GothamSemibold
+        btn.TextSize = 16
+        btn.BorderSizePixel = 0
+        btn.Parent = WeaponScroll
+
+        local img = Instance.new("ImageLabel", btn)
+        img.Size = UDim2.new(0, 40, 0, 40)
+        img.Position = UDim2.new(1, -50, 0.5, -20)
+        img.BackgroundTransparency = 1
+        img.Image = GetThumb(weapon)
+
+        local badge = Instance.new("TextLabel", btn)
+        badge.Size = UDim2.new(0, 60, 0, 18)
+        badge.Position = UDim2.new(1, -120, 0, 4)
+        badge.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
+        badge.TextColor3 = Color3.new(1, 1, 1)
+        badge.Font = Enum.Font.GothamBold
+        badge.TextSize = 10
+        badge.BorderSizePixel = 0
+        badge.TextScaled = true
+        local badgeCorner = Instance.new("UICorner", badge)
+        badgeCorner.CornerRadius = UDim.new(0, 4)
+
+        local wrapBadge = Instance.new("TextLabel", btn)
+        wrapBadge.Size = UDim2.new(0, 60, 0, 18)
+        wrapBadge.Position = UDim2.new(1, -120, 0, 26)
+        wrapBadge.BackgroundColor3 = Color3.fromRGB(60, 100, 200)
+        wrapBadge.TextColor3 = Color3.new(1, 1, 1)
+        wrapBadge.Font = Enum.Font.GothamBold
+        wrapBadge.TextSize = 10
+        wrapBadge.BorderSizePixel = 0
+        wrapBadge.TextScaled = true
+        local wrapBadgeCorner = Instance.new("UICorner", wrapBadge)
+        wrapBadgeCorner.CornerRadius = UDim.new(0, 4)
+
+        local function UpdateBadges()
+            local skin = _G.EquippedData[weapon] and _G.EquippedData[weapon].Skin or "Default"
+            local wrap = _G.EquippedData[weapon] and _G.EquippedData[weapon].Wrap or "None"
+            badge.Visible = skin ~= "Default"
+            if badge.Visible then badge.Text = skin:sub(1, 8) end
+            wrapBadge.Visible = wrap ~= "None"
+            if wrapBadge.Visible then wrapBadge.Text = wrap:sub(1, 8) end
+        end
+        UpdateBadges()
+
+        btn.MouseButton1Click:Connect(function()
+            currentWeapon = weapon
+            for _, b in pairs(WeaponScroll:GetChildren()) do
+                if b:IsA("TextButton") then b.BackgroundColor3 = Color3.fromRGB(40, 40, 48) end
+            end
+            btn.BackgroundColor3 = Color3.fromRGB(80, 140, 255)
+            SelectedLabel.Text = weapon .. (_G.ActiveTab == "Skins" and " — Choose a Skin" or " — Choose a Wrap")
+            RefreshRightPanel()
+            UpdateBadges()
+        end)
+    end
+
+    for weapon in pairs(SkinLists) do
+        MakeWeaponBtn(weapon)
+    end
+    WeaponScroll.CanvasSize = UDim2.new(0, 0, 0, WeaponLayout.AbsoluteContentSize.Y)
+
+    WeaponSearch:GetPropertyChangedSignal("Text"):Connect(function()
+        local txt = WeaponSearch.Text:lower()
+        for _, btn in pairs(WeaponScroll:GetChildren()) do
+            if btn:IsA("TextButton") then
+                local btnText = btn.Text:match("^%s*(.-)%s*$"):lower()
+                btn.Visible = txt == "" or btnText:find(txt)
+            end
+        end
+    end)
+
+    -- ═══════════════════════════════════════════════
+    -- DRAG
+    -- ═══════════════════════════════════════════════
+    do
+        local dragging, dragStart, startPos
+        Title.Active = true
+        Title.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = true
+                dragStart = input.Position
+                startPos = Main.Position
+            end
+        end)
+        Title.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+        end)
+        UserInputService.InputChanged:Connect(function(input)
+            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                local delta = input.Position - dragStart
+                Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            end
+        end)
+    end
+
+    UserInputService.InputBegan:Connect(function(i, g)
+        if not g and i.KeyCode == Enum.KeyCode.K then
+            Main.Visible = not Main.Visible
+            if not Main.Visible then
+                pcall(function() WeaponSearch:ReleaseFocus() end)
+                pcall(function() UserInputService.MouseBehavior = Enum.MouseBehavior.Default end)
+            end
+        end
+    end)
+
+    print("[+] Aniha Skin Changer v2.3 loaded. Press K to toggle.")
+end)
