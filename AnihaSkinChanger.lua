@@ -56,6 +56,19 @@ local SkinLists = {
     ["Permafrost"] = {"Default", "Snowman Permafrost", "Ice Permafrost", "Glorious Permafrost"},
 }
 
+-- ═══════════════════════════════════════════════
+-- KILL FINISHER LIST
+-- ═══════════════════════════════════════════════
+local FinisherList = {
+    "Balloons", "Beacon", "BONK!", "Boogie", "Broom Ride", "Chark Attack",
+    "Clapped", "Crushed", "Darkheart", "Disco Fever", "Dynamite",
+    "Electrocuted", "Explode", "Freeze", "Gone Fishing", "Haunted",
+    "Into The Void", "Jingle", "Key Drop", "Launched", "Merry Christmas",
+    "Obliterated", "Party Time", "Pixel Death", "Pumpkin Bomb", "Recalled",
+    "Rocket Launch", "Shattered", "Spaghettified", "Stomped",
+    "Summoned", "Teleported", "Tombstone", "Vortex", "Wrapped Up",
+}
+
 -- Sorted wrap list: None + Dark pinned first, rest alphabetical
 local WrapList = {
     "None", "Dark",
@@ -122,8 +135,8 @@ for w in pairs(SkinLists) do
     if not _G.EquippedData[w] then _G.EquippedData[w] = {Skin = "Default", Wrap = "None"} end
 end
 LoadConfig()
-print("[+] Aniha Skin Changer v3.0 starting...")
-_G.AnihaVersion = "3.0"
+print("[+] Aniha Skin Changer v4.0 starting...")
+_G.AnihaVersion = "4.0"
 
 -- ═══════════════════════════════════════════════
 -- PERFORMANCE FUNCTIONS
@@ -170,6 +183,193 @@ local function ApplyDamageColor(color)
         _G.DamageColorConn = player.PlayerGui.DescendantAdded:Connect(function(v)
             task.defer(function() tag(v) end)
         end)
+    end)
+end
+
+-- ═══════════════════════════════════════════════
+-- HIDE NAMES & CHAT
+-- ═══════════════════════════════════════════════
+local function ApplyHideNames(on)
+    pcall(function()
+        -- Hide overhead name billboards
+        for _, plr in pairs(Players:GetPlayers()) do
+            if plr ~= player then
+                local char = plr.Character
+                if char then
+                    for _, v in pairs(char:GetDescendants()) do
+                        if v:IsA("BillboardGui") then v.Enabled = not on end
+                        if v:IsA("TextLabel") and v.Parent:IsA("BillboardGui") then v.Visible = not on end
+                    end
+                end
+            end
+        end
+        -- Also hide via PlayerGui overhead labels if present
+        local pg = player.PlayerGui
+        for _, v in pairs(pg:GetDescendants()) do
+            if v.Name == "NameGui" or v.Name == "HealthGui" or v.Name == "PlayerLabel" then
+                v.Enabled = not on
+            end
+        end
+    end)
+end
+
+local function ApplyHideChat(on)
+    pcall(function()
+        local pg = player.PlayerGui
+        -- Hide the main chat window (BubbleChat / TextChatGui)
+        for _, v in pairs(pg:GetChildren()) do
+            if v.Name == "BubbleNotifications" or v.Name == "Chat" or v.Name == "TextChatGui" then
+                v.Enabled = not on
+            end
+        end
+    end)
+end
+
+-- ═══════════════════════════════════════════════
+-- WEAPON VISIBILITY (hide viewmodel)
+-- ═══════════════════════════════════════════════
+_G.WeaponHidden = _G.WeaponHidden or false
+local function ApplyHideWeapon(on)
+    _G.WeaponHidden = on
+    pcall(function()
+        -- Try to find the local viewmodel camera container
+        local cam = workspace.CurrentCamera
+        if cam then
+            for _, v in pairs(cam:GetDescendants()) do
+                if v:IsA("BasePart") or v:IsA("MeshPart") or v:IsA("SpecialMesh") then
+                    v.LocalTransparencyModifier = on and 1 or 0
+                end
+            end
+        end
+        -- Also scan workspace for the local character's equipped tool model
+        local char = player.Character
+        if char then
+            for _, tool in pairs(char:GetChildren()) do
+                if tool:IsA("Tool") then
+                    for _, part in pairs(tool:GetDescendants()) do
+                        if part:IsA("BasePart") or part:IsA("MeshPart") then
+                            part.LocalTransparencyModifier = on and 1 or 0
+                        end
+                    end
+                end
+            end
+        end
+    end)
+end
+
+-- Keep weapon hidden state in sync when weapon changes
+RunService.Heartbeat:Connect(function()
+    if not _G.WeaponHidden then return end
+    pcall(function()
+        local char = player.Character
+        if char then
+            for _, tool in pairs(char:GetChildren()) do
+                if tool:IsA("Tool") then
+                    for _, part in pairs(tool:GetDescendants()) do
+                        if part:IsA("BasePart") or part:IsA("MeshPart") then
+                            part.LocalTransparencyModifier = 1
+                        end
+                    end
+                end
+            end
+        end
+        local cam = workspace.CurrentCamera
+        if cam then
+            for _, v in pairs(cam:GetDescendants()) do
+                if v:IsA("BasePart") or v:IsA("MeshPart") then
+                    v.LocalTransparencyModifier = 1
+                end
+            end
+        end
+    end)
+end)
+
+-- ═══════════════════════════════════════════════
+-- HIT OUTLINE
+-- ═══════════════════════════════════════════════
+_G.OutlineSettings = _G.OutlineSettings or {
+    Enabled = true,
+    Color = Color3.fromRGB(255, 80, 80),
+}
+
+local function ApplyOutlineSettings()
+    pcall(function()
+        -- Scan for SelectionBox or highlight objects used for hit outlines in PlayerGui/workspace
+        local function patchOutline(v)
+            if v:IsA("SelectionBox") then
+                v.Visible = _G.OutlineSettings.Enabled
+                if _G.OutlineSettings.Enabled then
+                    v.Color3 = _G.OutlineSettings.Color
+                    v.LineThickness = 0.05
+                    v.SurfaceTransparency = 0.85
+                    v.SurfaceColor3 = _G.OutlineSettings.Color
+                end
+            elseif v:IsA("Highlight") then
+                v.Enabled = _G.OutlineSettings.Enabled
+                if _G.OutlineSettings.Enabled then
+                    v.OutlineColor = _G.OutlineSettings.Color
+                end
+            end
+        end
+        for _, v in pairs(workspace:GetDescendants()) do patchOutline(v) end
+        for _, v in pairs(player.PlayerGui:GetDescendants()) do patchOutline(v) end
+        if _G.OutlineConn then _G.OutlineConn:Disconnect() end
+        _G.OutlineConn = workspace.DescendantAdded:Connect(function(v)
+            task.defer(function() patchOutline(v) end)
+        end)
+    end)
+end
+
+-- ═══════════════════════════════════════════════
+-- UNLOCK ALL SKINS VISUALLY
+-- (patches CosmeticLibrary.IsOwned / HasSkin if present)
+-- ═══════════════════════════════════════════════
+local function PatchUnlockAll(CosmeticLibrary)
+    pcall(function()
+        if CosmeticLibrary.IsOwned then
+            CosmeticLibrary.IsOwned = function() return true end
+        end
+        if CosmeticLibrary.HasSkin then
+            CosmeticLibrary.HasSkin = function() return true end
+        end
+        if CosmeticLibrary.OwnedSkins then
+            -- inject all skins into owned list
+            for wp, skins in pairs(SkinLists) do
+                for _, sk in ipairs(skins) do
+                    if not table.find(CosmeticLibrary.OwnedSkins, sk) then
+                        table.insert(CosmeticLibrary.OwnedSkins, sk)
+                    end
+                end
+            end
+        end
+        -- Patch any Locked flags in cosmetics table
+        if CosmeticLibrary.Cosmetics then
+            for _, data in pairs(CosmeticLibrary.Cosmetics) do
+                if type(data) == "table" then
+                    data.Locked = false
+                    data.Owned = true
+                    data.IsOwned = true
+                end
+            end
+        end
+    end)
+end
+
+-- ═══════════════════════════════════════════════
+-- REVOLVER SKIN FIX
+-- Forces the skin to reload properly on a delay
+-- ═══════════════════════════════════════════════
+local function FixRevolverSkin(CosmeticLibrary)
+    pcall(function()
+        local sel = _G.EquippedData["Revolver"] and _G.EquippedData["Revolver"].Skin
+        if sel and sel ~= "Default" then
+            task.delay(0.5, function()
+                pcall(function() CosmeticLibrary.Equip("Revolver","Skin","Default") end)
+                task.delay(0.2, function()
+                    pcall(function() CosmeticLibrary.Equip("Revolver","Skin",sel) end)
+                end)
+            end)
+        end
     end)
 end
 
@@ -228,14 +428,28 @@ task.spawn(function()
         warn("[!] Aniha: Core modules missing.") return
     end
 
+    -- Patch unlock all skins visually
+    PatchUnlockAll(CosmeticLibrary)
+
+    -- Fix revolver skin on load
+    FixRevolverSkin(CosmeticLibrary)
+
     local function getCosmeticData(name, cType)
         local base = CosmeticLibrary.Cosmetics[name]
         if not base then return nil end
         local data = table.clone(base)
         data.Name = name data.Type = cType
+        data.Locked = false
+        data.Owned = true
+        data.IsOwned = true
         if name == "AKEY-47" then data.IsMythical = true data.BundlePath = "Bundles"
         elseif name:find("Gingerbread") then data.BundlePath = "Festive Skin Case"
         elseif name == "Evil Trident" then data.DisplayName = "Evil Trident" end
+        -- Revolver fix: ensure correct item name matching
+        if name == "Revolver" or name == "Desert Eagle" or name == "Sheriff" or name == "Peppergun" or name == "Boneclaw Revolver" or name == "Peppermint Sheriff" then
+            data._RevolverFix = true
+            data.ItemName = "Revolver"
+        end
         return data
     end
 
@@ -273,6 +487,12 @@ task.spawn(function()
         end)
         local vm = oldNew(replicatedData, clientItem)
         task.delay(0.1, function() pcall(function() if vm and vm._UpdateWrap then vm:_UpdateWrap() end end) end)
+        -- Revolver: extra delay re-equip to fix display bug
+        pcall(function()
+            if clientItem and clientItem.Name == "Revolver" then
+                task.delay(0.3, function() FixRevolverSkin(CosmeticLibrary) end)
+            end
+        end)
         return vm
     end
 
@@ -302,18 +522,23 @@ task.spawn(function()
     -- COLOR CONSTANTS
     -- ═══════════════════════════════════════════════
     local C = {
-        BG       = Color3.fromRGB(14, 14, 18),
-        PANEL    = Color3.fromRGB(20, 20, 26),
-        CARD     = Color3.fromRGB(28, 28, 36),
+        BG       = Color3.fromRGB(10, 10, 14),
+        PANEL    = Color3.fromRGB(16, 16, 22),
+        CARD     = Color3.fromRGB(24, 24, 32),
+        CARD2    = Color3.fromRGB(30, 30, 42),
         SEL      = Color3.fromRGB(50, 100, 210),
         EQUIP    = Color3.fromRGB(38, 155, 85),
-        RED      = Color3.fromRGB(230, 55, 55),
+        RED      = Color3.fromRGB(220, 50, 50),
+        RED2     = Color3.fromRGB(180, 35, 35),
         BLUE     = Color3.fromRGB(55, 100, 215),
+        GOLD     = Color3.fromRGB(220, 170, 30),
         TEXT     = Color3.fromRGB(225, 225, 232),
         DIM      = Color3.fromRGB(110, 110, 128),
-        SEP      = Color3.fromRGB(35, 35, 46),
+        SEP      = Color3.fromRGB(35, 35, 50),
         TOG_ON   = Color3.fromRGB(38, 175, 90),
-        TOG_OFF  = Color3.fromRGB(38, 38, 50),
+        TOG_OFF  = Color3.fromRGB(38, 38, 54),
+        PURPLE   = Color3.fromRGB(130, 60, 220),
+        CYAN     = Color3.fromRGB(30, 190, 220),
     }
 
     local function Rnd(p, r) local c = Instance.new("UICorner",p) c.CornerRadius = UDim.new(0,r or 6) end
@@ -329,46 +554,89 @@ task.spawn(function()
     SG.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
     local Main = Instance.new("Frame", SG)
-    Main.Size = UDim2.new(0, 990, 0, 690)
-    Main.Position = UDim2.new(0.5, -495, 0.5, -345)
+    Main.Size = UDim2.new(0, 1020, 0, 720)
+    Main.Position = UDim2.new(0.5, -510, 0.5, -360)
     Main.BackgroundColor3 = C.BG
     Main.BorderSizePixel = 0
     Main.Active = false
-    Rnd(Main, 10)
-    Str(Main, Color3.fromRGB(45,45,60), 1)
+    Rnd(Main, 12)
+    Str(Main, Color3.fromRGB(50,50,70), 1.5)
+
+    -- GRADIENT background accent
+    local BGGrad = Instance.new("UIGradient", Main)
+    BGGrad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(14,12,22)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(10,10,14)),
+    })
+    BGGrad.Rotation = 135
 
     -- TITLE BAR
     local TB = Instance.new("Frame", Main)
-    TB.Size = UDim2.new(1, 0, 0, 46)
-    TB.BackgroundColor3 = C.PANEL
+    TB.Size = UDim2.new(1, 0, 0, 50)
+    TB.BackgroundColor3 = Color3.fromRGB(15, 10, 22)
     TB.BorderSizePixel = 0
     TB.ZIndex = 5
+    Rnd(TB, 0)
+
+    local TBGrad = Instance.new("UIGradient", TB)
+    TBGrad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(160,30,30)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(18,12,30)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(15,10,22)),
+    })
+    TBGrad.Rotation = 90
+
     local TL = Instance.new("TextLabel", TB)
-    TL.Size = UDim2.new(1, 0, 1, 0)
+    TL.Size = UDim2.new(1, -150, 1, 0)
+    TL.Position = UDim2.new(0, 18, 0, 0)
     TL.BackgroundTransparency = 1
-    TL.Text = "✦  ANIHA SKIN CHANGER  •  [ K ] Toggle"
-    TL.TextColor3 = C.RED
+    TL.Text = "✦  ANIHA SKIN CHANGER  v4.0"
+    TL.TextColor3 = Color3.new(1,1,1)
     TL.Font = Enum.Font.GothamBlack
-    TL.TextSize = 19
+    TL.TextSize = 18
+    TL.TextXAlignment = Enum.TextXAlignment.Left
     TL.ZIndex = 5
+
+    local TLSub = Instance.new("TextLabel", TB)
+    TLSub.Size = UDim2.new(0, 200, 1, 0)
+    TLSub.Position = UDim2.new(1, -210, 0, 0)
+    TLSub.BackgroundTransparency = 1
+    TLSub.Text = "[ K ]  Toggle"
+    TLSub.TextColor3 = Color3.fromRGB(180, 100, 100)
+    TLSub.Font = Enum.Font.GothamBold
+    TLSub.TextSize = 13
+    TLSub.TextXAlignment = Enum.TextXAlignment.Right
+    TLSub.ZIndex = 5
+
+    -- ACCENT LINE under title
+    local AccentLine = Instance.new("Frame", Main)
+    AccentLine.Size = UDim2.new(1, 0, 0, 2)
+    AccentLine.Position = UDim2.new(0, 0, 0, 50)
+    AccentLine.BorderSizePixel = 0
+    local AL_Grad = Instance.new("UIGradient", AccentLine)
+    AL_Grad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(220,40,40)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(160,60,220)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(30,120,220)),
+    })
 
     -- TAB BAR
     local TabBar = Instance.new("Frame", Main)
-    TabBar.Size = UDim2.new(1, 0, 0, 38)
-    TabBar.Position = UDim2.new(0, 0, 0, 46)
-    TabBar.BackgroundColor3 = Color3.fromRGB(16, 16, 22)
+    TabBar.Size = UDim2.new(1, 0, 0, 42)
+    TabBar.Position = UDim2.new(0, 0, 0, 52)
+    TabBar.BackgroundColor3 = Color3.fromRGB(13, 13, 18)
     TabBar.BorderSizePixel = 0
 
     local TabLL = Instance.new("UIListLayout", TabBar)
     TabLL.FillDirection = Enum.FillDirection.Horizontal
     TabLL.Padding = UDim.new(0, 5)
     TabLL.VerticalAlignment = Enum.VerticalAlignment.Center
-    Pad(TabBar, 4, 4, 10, 10)
+    Pad(TabBar, 5, 5, 12, 12)
 
     local tabs = {}
     local function MakeTabBtn(icon, lbl, key)
         local b = Instance.new("TextButton", TabBar)
-        b.Size = UDim2.new(0, 152, 1, 0)
+        b.Size = UDim2.new(0, 148, 1, 0)
         b.BackgroundColor3 = C.CARD
         b.Text = icon .. "  " .. lbl
         b.TextColor3 = C.DIM
@@ -376,28 +644,34 @@ task.spawn(function()
         b.TextSize = 13
         b.BorderSizePixel = 0
         b.AutoButtonColor = false
-        Rnd(b, 5)
+        Rnd(b, 6)
         tabs[key] = b
         return b
     end
-    local SkinsTabBtn  = MakeTabBtn("🎨", "Skins",       "Skins")
-    local WrapsTabBtn  = MakeTabBtn("🎁", "Wraps",       "Wraps")
-    local PerfTabBtn   = MakeTabBtn("⚡", "Performance", "Performance")
+    local SkinsTabBtn    = MakeTabBtn("🎨", "Skins",         "Skins")
+    local WrapsTabBtn    = MakeTabBtn("🎁", "Wraps",         "Wraps")
+    local PerfTabBtn     = MakeTabBtn("⚡", "Performance",   "Performance")
+    local FinisherTabBtn = MakeTabBtn("💀", "Kill Finishers","Finishers")
 
     local function SetTab(name)
         _G.ActiveTab = name
         for k, b in pairs(tabs) do
-            if k == name then b.BackgroundColor3 = C.RED b.TextColor3 = Color3.new(1,1,1)
-            else b.BackgroundColor3 = C.CARD b.TextColor3 = C.DIM end
+            if k == name then
+                b.BackgroundColor3 = C.RED b.TextColor3 = Color3.new(1,1,1)
+                local s = Str(b, C.RED, 0)
+                s.Thickness = 0
+            else
+                b.BackgroundColor3 = C.CARD b.TextColor3 = C.DIM
+            end
         end
     end
     SetTab("Skins")
 
     -- TOOLBAR
     local Toolbar = Instance.new("Frame", Main)
-    Toolbar.Size = UDim2.new(1, 0, 0, 42)
-    Toolbar.Position = UDim2.new(0, 0, 1, -42)
-    Toolbar.BackgroundColor3 = Color3.fromRGB(16, 16, 22)
+    Toolbar.Size = UDim2.new(1, 0, 0, 44)
+    Toolbar.Position = UDim2.new(0, 0, 1, -44)
+    Toolbar.BackgroundColor3 = Color3.fromRGB(13, 13, 18)
     Toolbar.BorderSizePixel = 0
 
     local StatusLbl = Instance.new("TextLabel", Toolbar)
@@ -412,8 +686,8 @@ task.spawn(function()
 
     local function TBtn(txt, xOff, color)
         local b = Instance.new("TextButton", Toolbar)
-        b.Size = UDim2.new(0, 142, 0, 28)
-        b.Position = UDim2.new(1, xOff, 0.5, -14)
+        b.Size = UDim2.new(0, 142, 0, 30)
+        b.Position = UDim2.new(1, xOff, 0.5, -15)
         b.BackgroundColor3 = color
         b.Text = txt
         b.TextColor3 = Color3.new(1,1,1)
@@ -421,11 +695,11 @@ task.spawn(function()
         b.TextSize = 13
         b.BorderSizePixel = 0
         b.AutoButtonColor = false
-        Rnd(b, 5)
+        Rnd(b, 6)
         return b
     end
-    local SaveBtn = TBtn("💾  Save Config", -298, Color3.fromRGB(38,115,55))
-    local LoadBtn = TBtn("📂  Load Config", -148, Color3.fromRGB(45,85,165))
+    local SaveBtn = TBtn("💾  Save Config", -300, Color3.fromRGB(35, 110, 52))
+    local LoadBtn = TBtn("📂  Load Config", -150, Color3.fromRGB(42, 80, 160))
 
     local function Flash(msg, color)
         StatusLbl.Text = msg StatusLbl.TextColor3 = color or Color3.fromRGB(90,215,110)
@@ -435,20 +709,21 @@ task.spawn(function()
     LoadBtn.MouseButton1Click:Connect(function() if LoadConfig() then Flash("✅ Loaded!",Color3.fromRGB(90,180,255)) ApplyAllSkins() else Flash("❌ No config!",Color3.fromRGB(215,70,70)) end end)
 
     -- CONTENT BOUNDS
-    local CY = 46 + 38  -- below title + tabs
-    local CH = 690 - CY - 42 -- minus toolbar
+    local CY = 50 + 2 + 42  -- below title + line + tabs
+    local CH = 720 - CY - 44 -- minus toolbar
     local MARGIN = 8
 
-    -- LEFT PANEL (weapon list) – hidden on Perf tab
+    -- LEFT PANEL (weapon list) – hidden on Perf/Finisher tab
     local LeftPanel = Instance.new("Frame", Main)
     LeftPanel.Size = UDim2.new(0, 262, 0, CH - MARGIN*2)
     LeftPanel.Position = UDim2.new(0, MARGIN, 0, CY + MARGIN)
     LeftPanel.BackgroundColor3 = C.PANEL
     LeftPanel.BorderSizePixel = 0
     Rnd(LeftPanel, 8)
+    Str(LeftPanel, C.SEP, 1)
 
     local SearchBox = Instance.new("TextBox", LeftPanel)
-    SearchBox.Size = UDim2.new(1, -16, 0, 32)
+    SearchBox.Size = UDim2.new(1, -16, 0, 34)
     SearchBox.Position = UDim2.new(0, 8, 0, 8)
     SearchBox.BackgroundColor3 = C.CARD
     SearchBox.PlaceholderText = "🔍  Search weapon..."
@@ -459,12 +734,13 @@ task.spawn(function()
     SearchBox.TextSize = 13
     SearchBox.BorderSizePixel = 0
     SearchBox.ClearTextOnFocus = false
-    Rnd(SearchBox, 5)
+    Rnd(SearchBox, 6)
     Pad(SearchBox, 0, 0, 8, 8)
+    Str(SearchBox, C.SEP, 1)
 
     local WScroll = Instance.new("ScrollingFrame", LeftPanel)
-    WScroll.Size = UDim2.new(1, -16, 1, -50)
-    WScroll.Position = UDim2.new(0, 8, 0, 48)
+    WScroll.Size = UDim2.new(1, -16, 1, -52)
+    WScroll.Position = UDim2.new(0, 8, 0, 50)
     WScroll.BackgroundTransparency = 1
     WScroll.ScrollBarThickness = 3
     WScroll.ScrollBarImageColor3 = C.RED
@@ -482,6 +758,7 @@ task.spawn(function()
     RightPanel.BackgroundColor3 = C.PANEL
     RightPanel.BorderSizePixel = 0
     Rnd(RightPanel, 8)
+    Str(RightPanel, C.SEP, 1)
 
     local SelLbl = Instance.new("TextLabel", RightPanel)
     SelLbl.Size = UDim2.new(1, -16, 0, 36)
@@ -528,7 +805,9 @@ task.spawn(function()
     WrapGrid.CellPadding = UDim2.new(0, 8, 0, 6)
     WrapGrid.SortOrder = Enum.SortOrder.LayoutOrder
 
-    -- PERF PANEL (full-width when active)
+    -- ═══════════════════════════════════════════════
+    -- PERF PANEL (full-width)
+    -- ═══════════════════════════════════════════════
     local PerfScroll = Instance.new("ScrollingFrame", RightPanel)
     PerfScroll.Size = UDim2.new(1, -16, 1, -54)
     PerfScroll.Position = UDim2.new(0, 8, 0, 50)
@@ -537,38 +816,161 @@ task.spawn(function()
     PerfScroll.ScrollBarImageColor3 = C.RED
     PerfScroll.BorderSizePixel = 0
     PerfScroll.Visible = false
-    PerfScroll.CanvasSize = UDim2.new(0,0,0,700)
+    PerfScroll.CanvasSize = UDim2.new(0,0,0,900)
 
     local PerfLL = Instance.new("UIListLayout", PerfScroll)
     PerfLL.Padding = UDim.new(0, 8)
     PerfLL.SortOrder = Enum.SortOrder.LayoutOrder
 
     -- ═══════════════════════════════════════════════
-    -- BUILD PERF TAB
+    -- FINISHER PANEL
     -- ═══════════════════════════════════════════════
-    local function PHeader(txt, order)
-        local f = Instance.new("TextLabel", PerfScroll)
-        f.Size = UDim2.new(1, -8, 0, 22)
-        f.BackgroundTransparency = 1
-        f.Text = txt
-        f.TextColor3 = C.RED
-        f.Font = Enum.Font.GothamBlack
-        f.TextSize = 12
-        f.TextXAlignment = Enum.TextXAlignment.Left
-        f.LayoutOrder = order
+    local FinisherScroll = Instance.new("ScrollingFrame", RightPanel)
+    FinisherScroll.Size = UDim2.new(1, -16, 1, -54)
+    FinisherScroll.Position = UDim2.new(0, 8, 0, 50)
+    FinisherScroll.BackgroundTransparency = 1
+    FinisherScroll.ScrollBarThickness = 3
+    FinisherScroll.ScrollBarImageColor3 = C.RED
+    FinisherScroll.BorderSizePixel = 0
+    FinisherScroll.Visible = false
+    FinisherScroll.CanvasSize = UDim2.new(0,0,0,0)
+
+    local FinisherGrid = Instance.new("UIGridLayout", FinisherScroll)
+    FinisherGrid.CellSize = UDim2.new(0, 175, 0, 54)
+    FinisherGrid.CellPadding = UDim2.new(0, 8, 0, 8)
+    FinisherGrid.SortOrder = Enum.SortOrder.LayoutOrder
+
+    -- Populate finishers
+    local equippedFinisher = "None"
+    local finisherBtns = {}
+
+    -- "None" button first
+    local noneFinBtn = Instance.new("TextButton")
+    noneFinBtn.Size = UDim2.new(0,175,0,54)
+    noneFinBtn.BackgroundColor3 = C.EQUIP
+    noneFinBtn.Text = "🚫  None"
+    noneFinBtn.TextColor3 = C.TEXT
+    noneFinBtn.Font = Enum.Font.GothamBold
+    noneFinBtn.TextSize = 13
+    noneFinBtn.BorderSizePixel = 0
+    noneFinBtn.LayoutOrder = 0
+    noneFinBtn.AutoButtonColor = false
+    noneFinBtn.Parent = FinisherScroll
+    Rnd(noneFinBtn, 7)
+    Str(noneFinBtn, C.EQUIP, 1.5)
+    finisherBtns["None"] = noneFinBtn
+
+    for i, fin in ipairs(FinisherList) do
+        local fb = Instance.new("TextButton")
+        fb.Size = UDim2.new(0,175,0,54)
+        fb.BackgroundColor3 = C.CARD
+        fb.BorderSizePixel = 0
+        fb.AutoButtonColor = false
+        fb.LayoutOrder = i
+        fb.Text = ""
+        fb.Parent = FinisherScroll
+        Rnd(fb, 7)
+        Str(fb, C.SEP, 1)
+        finisherBtns[fin] = fb
+
+        -- Skull icon
+        local icon = Instance.new("TextLabel", fb)
+        icon.Size = UDim2.new(0, 30, 1, 0)
+        icon.Position = UDim2.new(0, 8, 0, 0)
+        icon.BackgroundTransparency = 1
+        icon.Text = "💀"
+        icon.TextSize = 18
+        icon.Font = Enum.Font.GothamBold
+
+        local lbl = Instance.new("TextLabel", fb)
+        lbl.Size = UDim2.new(1, -44, 1, 0)
+        lbl.Position = UDim2.new(0, 40, 0, 0)
+        lbl.BackgroundTransparency = 1
+        lbl.Text = fin
+        lbl.TextColor3 = C.TEXT
+        lbl.Font = Enum.Font.GothamSemibold
+        lbl.TextSize = 12
+        lbl.TextWrapped = true
+        lbl.TextXAlignment = Enum.TextXAlignment.Left
+
+        -- Unlocked badge
+        local badge = Instance.new("TextLabel", fb)
+        badge.Size = UDim2.new(0, 52, 0, 14)
+        badge.Position = UDim2.new(1, -58, 0, 4)
+        badge.BackgroundColor3 = C.EQUIP
+        badge.TextColor3 = Color3.new(1,1,1)
+        badge.Font = Enum.Font.GothamBold
+        badge.TextSize = 8
+        badge.Text = "OWNED"
+        badge.BorderSizePixel = 0
+        Rnd(badge, 4)
+
+        fb.MouseButton1Click:Connect(function()
+            for _, b in pairs(finisherBtns) do
+                b.BackgroundColor3 = C.CARD
+                pcall(function() Str(b, C.SEP, 1) end)
+            end
+            fb.BackgroundColor3 = Color3.fromRGB(90,30,30)
+            equippedFinisher = fin
+            pcall(function() CosmeticLibrary.Equip("Finisher", "Finisher", fin) end)
+            SelLbl.Text = "💀  Equipped: " .. fin
+            Flash("💀 Finisher: " .. fin, C.RED)
+        end)
     end
 
-    local function PToggle(label, desc, order, callback)
+    noneFinBtn.MouseButton1Click:Connect(function()
+        for _, b in pairs(finisherBtns) do b.BackgroundColor3 = C.CARD end
+        noneFinBtn.BackgroundColor3 = C.EQUIP
+        equippedFinisher = "None"
+        pcall(function() CosmeticLibrary.Equip("Finisher","Finisher","None") end)
+        SelLbl.Text = "💀  Kill Finishers  —  None"
+    end)
+
+    FinisherScroll.CanvasSize = UDim2.new(0,0,0,FinisherGrid.AbsoluteContentSize.Y+12)
+
+    -- ═══════════════════════════════════════════════
+    -- BUILD PERF TAB (redesigned)
+    -- ═══════════════════════════════════════════════
+    local function PHeader(txt, order, col)
+        local f = Instance.new("Frame", PerfScroll)
+        f.Size = UDim2.new(1, -8, 0, 30)
+        f.BackgroundColor3 = col and Color3.fromRGB(
+            math.floor(col.R*255*0.15), math.floor(col.G*255*0.15), math.floor(col.B*255*0.15)
+        ) or Color3.fromRGB(30, 15, 15)
+        f.BorderSizePixel = 0
+        f.LayoutOrder = order
+        Rnd(f, 6)
+
+        local line = Instance.new("Frame", f)
+        line.Size = UDim2.new(0, 3, 0.7, 0)
+        line.Position = UDim2.new(0, 0, 0.15, 0)
+        line.BackgroundColor3 = col or C.RED
+        line.BorderSizePixel = 0
+        Rnd(line, 2)
+
+        local lbl = Instance.new("TextLabel", f)
+        lbl.Size = UDim2.new(1, -16, 1, 0)
+        lbl.Position = UDim2.new(0, 12, 0, 0)
+        lbl.BackgroundTransparency = 1
+        lbl.Text = txt
+        lbl.TextColor3 = col or C.RED
+        lbl.Font = Enum.Font.GothamBlack
+        lbl.TextSize = 12
+        lbl.TextXAlignment = Enum.TextXAlignment.Left
+    end
+
+    local function PToggle(label, desc, order, callback, accent)
         local row = Instance.new("Frame", PerfScroll)
-        row.Size = UDim2.new(1, -8, 0, 58)
+        row.Size = UDim2.new(1, -8, 0, 62)
         row.BackgroundColor3 = C.CARD
         row.BorderSizePixel = 0
         row.LayoutOrder = order
-        Rnd(row, 7)
+        Rnd(row, 8)
+        Str(row, C.SEP, 1)
 
         local lbl = Instance.new("TextLabel", row)
-        lbl.Size = UDim2.new(1, -78, 0, 24)
-        lbl.Position = UDim2.new(0, 12, 0, 7)
+        lbl.Size = UDim2.new(1, -82, 0, 26)
+        lbl.Position = UDim2.new(0, 14, 0, 8)
         lbl.BackgroundTransparency = 1
         lbl.Text = label
         lbl.TextColor3 = C.TEXT
@@ -577,8 +979,8 @@ task.spawn(function()
         lbl.TextXAlignment = Enum.TextXAlignment.Left
 
         local sub = Instance.new("TextLabel", row)
-        sub.Size = UDim2.new(1, -78, 0, 18)
-        sub.Position = UDim2.new(0, 12, 0, 32)
+        sub.Size = UDim2.new(1, -82, 0, 18)
+        sub.Position = UDim2.new(0, 14, 0, 36)
         sub.BackgroundTransparency = 1
         sub.Text = desc
         sub.TextColor3 = C.DIM
@@ -587,37 +989,173 @@ task.spawn(function()
         sub.TextXAlignment = Enum.TextXAlignment.Left
 
         local togBg = Instance.new("Frame", row)
-        togBg.Size = UDim2.new(0, 48, 0, 24)
-        togBg.Position = UDim2.new(1, -60, 0.5, -12)
+        togBg.Size = UDim2.new(0, 52, 0, 26)
+        togBg.Position = UDim2.new(1, -64, 0.5, -13)
         togBg.BackgroundColor3 = C.TOG_OFF
         togBg.BorderSizePixel = 0
-        Rnd(togBg, 12)
+        Rnd(togBg, 13)
 
         local knob = Instance.new("Frame", togBg)
-        knob.Size = UDim2.new(0, 18, 0, 18)
-        knob.Position = UDim2.new(0, 3, 0.5, -9)
+        knob.Size = UDim2.new(0, 20, 0, 20)
+        knob.Position = UDim2.new(0, 3, 0.5, -10)
         knob.BackgroundColor3 = Color3.new(1,1,1)
         knob.BorderSizePixel = 0
-        Rnd(knob, 9)
+        Rnd(knob, 10)
 
         local state = false
         local clk = Instance.new("TextButton", row)
         clk.Size = UDim2.new(1,0,1,0) clk.BackgroundTransparency=1 clk.Text="" clk.ZIndex=2
         clk.MouseButton1Click:Connect(function()
             state = not state
-            togBg.BackgroundColor3 = state and C.TOG_ON or C.TOG_OFF
-            knob.Position = state and UDim2.new(0, 27, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
+            togBg.BackgroundColor3 = state and (accent or C.TOG_ON) or C.TOG_OFF
+            knob.Position = state and UDim2.new(0, 29, 0.5, -10) or UDim2.new(0, 3, 0.5, -10)
             callback(state)
         end)
+        return function(s)
+            state = s
+            togBg.BackgroundColor3 = state and (accent or C.TOG_ON) or C.TOG_OFF
+            knob.Position = state and UDim2.new(0, 29, 0.5, -10) or UDim2.new(0, 3, 0.5, -10)
+        end
     end
 
-    PHeader("🔧  GRAPHICS OPTIMIZATIONS", 1)
+    -- GRAPHICS SECTION
+    PHeader("🔧  GRAPHICS OPTIMIZATIONS", 1, C.RED)
     PToggle("Low Graphics Quality",  "Set render quality to minimum Level01",      2, ApplyLowGraphics)
     PToggle("Disable Shadows",       "Turn off all dynamic & cast shadows",         3, ApplyNoShadows)
     PToggle("Disable Particles",     "Remove particles, trails and beam effects",   4, ApplyNoParticles)
     PToggle("Low Mesh Detail",       "Reduce mesh part detail level for FPS gains", 5, ApplyLowMesh)
 
-    PHeader("🎨  DAMAGE NUMBER COLOR", 10)
+    -- VISIBILITY SECTION
+    PHeader("👁  VISIBILITY OPTIONS", 9, C.CYAN)
+    PToggle("Hide Weapon (Invisible)", "Makes your held weapon fully invisible (FPS boost)", 10, ApplyHideWeapon, C.CYAN)
+    PToggle("Hide Player Names",       "Removes overhead name tags on all players",          11, ApplyHideNames, C.CYAN)
+    PToggle("Hide Chat",               "Hides the chat window entirely",                     12, ApplyHideChat,  C.CYAN)
+
+    -- HIT OUTLINE SECTION
+    PHeader("🎯  HIT OUTLINE SETTINGS", 19, C.PURPLE)
+
+    local outlineTogRow = Instance.new("Frame", PerfScroll)
+    outlineTogRow.Size = UDim2.new(1, -8, 0, 62)
+    outlineTogRow.BackgroundColor3 = C.CARD
+    outlineTogRow.BorderSizePixel = 0
+    outlineTogRow.LayoutOrder = 20
+    Rnd(outlineTogRow, 8)
+    Str(outlineTogRow, C.SEP, 1)
+
+    local otLbl = Instance.new("TextLabel", outlineTogRow)
+    otLbl.Size = UDim2.new(1,-82,0,26)
+    otLbl.Position = UDim2.new(0,14,0,8)
+    otLbl.BackgroundTransparency = 1
+    otLbl.Text = "Enable Hit Outline"
+    otLbl.TextColor3 = C.TEXT
+    otLbl.Font = Enum.Font.GothamBold
+    otLbl.TextSize = 13
+    otLbl.TextXAlignment = Enum.TextXAlignment.Left
+
+    local otSub = Instance.new("TextLabel", outlineTogRow)
+    otSub.Size = UDim2.new(1,-82,0,18)
+    otSub.Position = UDim2.new(0,14,0,36)
+    otSub.BackgroundTransparency = 1
+    otSub.Text = "Show/hide the red outline when you hit enemies"
+    otSub.TextColor3 = C.DIM
+    otSub.Font = Enum.Font.Gotham
+    otSub.TextSize = 11
+    otSub.TextXAlignment = Enum.TextXAlignment.Left
+
+    local outlineTog = Instance.new("Frame", outlineTogRow)
+    outlineTog.Size = UDim2.new(0,52,0,26)
+    outlineTog.Position = UDim2.new(1,-64,0.5,-13)
+    outlineTog.BackgroundColor3 = C.TOG_ON -- ON by default
+    outlineTog.BorderSizePixel = 0
+    Rnd(outlineTog, 13)
+
+    local outlineKnob = Instance.new("Frame", outlineTog)
+    outlineKnob.Size = UDim2.new(0,20,0,20)
+    outlineKnob.Position = UDim2.new(0,29,0.5,-10)
+    outlineKnob.BackgroundColor3 = Color3.new(1,1,1)
+    outlineKnob.BorderSizePixel = 0
+    Rnd(outlineKnob, 10)
+
+    local outlineTogBtn = Instance.new("TextButton", outlineTogRow)
+    outlineTogBtn.Size = UDim2.new(1,0,1,0)
+    outlineTogBtn.BackgroundTransparency = 1
+    outlineTogBtn.Text = ""
+    outlineTogBtn.ZIndex = 2
+    local outlineOn = true
+    outlineTogBtn.MouseButton1Click:Connect(function()
+        outlineOn = not outlineOn
+        _G.OutlineSettings.Enabled = outlineOn
+        outlineTog.BackgroundColor3 = outlineOn and C.PURPLE or C.TOG_OFF
+        outlineKnob.Position = outlineOn and UDim2.new(0,29,0.5,-10) or UDim2.new(0,3,0.5,-10)
+        ApplyOutlineSettings()
+        Flash(outlineOn and "🎯 Outline ON" or "🎯 Outline OFF", C.PURPLE)
+    end)
+
+    -- Outline color picker
+    local outlineColorLbl = Instance.new("TextLabel", PerfScroll)
+    outlineColorLbl.Size = UDim2.new(1,-8,0,22)
+    outlineColorLbl.BackgroundTransparency = 1
+    outlineColorLbl.Text = "  Outline Color"
+    outlineColorLbl.TextColor3 = C.PURPLE
+    outlineColorLbl.Font = Enum.Font.GothamBold
+    outlineColorLbl.TextSize = 11
+    outlineColorLbl.TextXAlignment = Enum.TextXAlignment.Left
+    outlineColorLbl.LayoutOrder = 21
+
+    local outlineColorOpts = {
+        {n="Red",    c=Color3.fromRGB(230,55,55)},
+        {n="Orange", c=Color3.fromRGB(240,130,30)},
+        {n="Yellow", c=Color3.fromRGB(240,215,35)},
+        {n="Lime",   c=Color3.fromRGB(55,215,75)},
+        {n="Cyan",   c=Color3.fromRGB(45,205,225)},
+        {n="Blue",   c=Color3.fromRGB(55,115,250)},
+        {n="Purple", c=Color3.fromRGB(170,55,250)},
+        {n="Pink",   c=Color3.fromRGB(250,75,175)},
+        {n="White",  c=Color3.fromRGB(238,238,238)},
+        {n="Gold",   c=Color3.fromRGB(248,195,35)},
+        {n="Mint",   c=Color3.fromRGB(55,210,160)},
+        {n="Coral",  c=Color3.fromRGB(250,100,85)},
+    }
+
+    local outlineColorContainer = Instance.new("Frame", PerfScroll)
+    outlineColorContainer.Size = UDim2.new(1,-8,0,118)
+    outlineColorContainer.BackgroundColor3 = C.CARD
+    outlineColorContainer.BorderSizePixel = 0
+    outlineColorContainer.LayoutOrder = 22
+    Rnd(outlineColorContainer, 7)
+    Str(outlineColorContainer, C.SEP, 1)
+    Pad(outlineColorContainer, 8, 8, 8, 8)
+
+    local outlineColorGrid = Instance.new("UIGridLayout", outlineColorContainer)
+    outlineColorGrid.CellSize = UDim2.new(0,88,0,34)
+    outlineColorGrid.CellPadding = UDim2.new(0,6,0,6)
+    outlineColorGrid.SortOrder = Enum.SortOrder.LayoutOrder
+
+    local activeOutlineStroke = nil
+    for i, opt in ipairs(outlineColorOpts) do
+        local cb = Instance.new("TextButton", outlineColorContainer)
+        cb.BackgroundColor3 = opt.c
+        cb.Text = opt.n
+        cb.TextColor3 = Color3.new(1,1,1)
+        cb.Font = Enum.Font.GothamBold
+        cb.TextSize = 12
+        cb.BorderSizePixel = 0
+        cb.LayoutOrder = i
+        cb.AutoButtonColor = false
+        Rnd(cb, 5)
+        local stroke = Str(cb, Color3.new(1,1,1), 0)
+        cb.MouseButton1Click:Connect(function()
+            if activeOutlineStroke then activeOutlineStroke.Thickness = 0 end
+            stroke.Thickness = 2
+            activeOutlineStroke = stroke
+            _G.OutlineSettings.Color = opt.c
+            ApplyOutlineSettings()
+            Flash("🎯 Outline color: " .. opt.n, opt.c)
+        end)
+    end
+
+    -- DAMAGE COLOR SECTION
+    PHeader("🎨  DAMAGE NUMBER COLOR", 29, C.GOLD)
 
     local colorOpts = {
         {n="Red",    c=Color3.fromRGB(230,55,55)},
@@ -635,16 +1173,17 @@ task.spawn(function()
     }
 
     local colorContainer = Instance.new("Frame", PerfScroll)
-    colorContainer.Size = UDim2.new(1, -8, 0, 118)
+    colorContainer.Size = UDim2.new(1,-8,0,118)
     colorContainer.BackgroundColor3 = C.CARD
     colorContainer.BorderSizePixel = 0
-    colorContainer.LayoutOrder = 11
+    colorContainer.LayoutOrder = 30
     Rnd(colorContainer, 7)
+    Str(colorContainer, C.SEP, 1)
     Pad(colorContainer, 8, 8, 8, 8)
 
     local colorGrid2 = Instance.new("UIGridLayout", colorContainer)
-    colorGrid2.CellSize = UDim2.new(0, 88, 0, 34)
-    colorGrid2.CellPadding = UDim2.new(0, 6, 0, 6)
+    colorGrid2.CellSize = UDim2.new(0,88,0,34)
+    colorGrid2.CellPadding = UDim2.new(0,6,0,6)
     colorGrid2.SortOrder = Enum.SortOrder.LayoutOrder
 
     local activeColorStroke = nil
@@ -665,9 +1204,15 @@ task.spawn(function()
             stroke.Thickness = 2
             activeColorStroke = stroke
             ApplyDamageColor(opt.c)
-            Flash("🎨 Damage color set: " .. opt.n, opt.c)
+            Flash("🎨 Damage color: " .. opt.n, opt.c)
         end)
     end
+
+    -- Update perf canvas size
+    PerfScroll.CanvasSize = UDim2.new(0,0,0,PerfLL.AbsoluteContentSize.Y+20)
+    PerfLL:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        PerfScroll.CanvasSize = UDim2.new(0,0,0,PerfLL.AbsoluteContentSize.Y+20)
+    end)
 
     -- ═══════════════════════════════════════════════
     -- WEAPON BUTTONS
@@ -685,11 +1230,25 @@ task.spawn(function()
             sb.AutoButtonColor = false
             sb.Parent = SkinScroll
             Rnd(sb, 6)
+            Str(sb, C.SEP, 1)
+
+            -- UNLOCKED badge (all skins show as owned)
+            local ownBadge = Instance.new("TextLabel", sb)
+            ownBadge.Size = UDim2.new(0, 52, 0, 14)
+            ownBadge.Position = UDim2.new(0, 4, 0, 4)
+            ownBadge.BackgroundColor3 = C.EQUIP
+            ownBadge.TextColor3 = Color3.new(1,1,1)
+            ownBadge.Font = Enum.Font.GothamBold
+            ownBadge.TextSize = 8
+            ownBadge.Text = "✓ OWNED"
+            ownBadge.BorderSizePixel = 0
+            Rnd(ownBadge, 3)
+
             local lbl = Instance.new("TextLabel", sb)
             lbl.Size = UDim2.new(1, 0, 0, 32)
             lbl.Position = UDim2.new(0, 0, 1, -32)
             lbl.BackgroundColor3 = Color3.new(0,0,0)
-            lbl.BackgroundTransparency = 0.3
+            lbl.BackgroundTransparency = 0.25
             lbl.Text = skin
             lbl.TextColor3 = C.TEXT
             lbl.Font = Enum.Font.GothamSemibold
@@ -701,6 +1260,10 @@ task.spawn(function()
                 _G.EquippedData[wp].Skin = skin
                 pcall(function() CosmeticLibrary.Equip(wp,"Skin",skin) end)
                 SelLbl.Text = "✅  " .. wp .. "  —  " .. skin
+                -- Revolver fix: re-apply after a tiny delay
+                if wp == "Revolver" then
+                    task.delay(0.3, function() FixRevolverSkin(CosmeticLibrary) end)
+                end
             end)
         end
         SkinScroll.CanvasSize = UDim2.new(0,0,0,SkinGrid.AbsoluteContentSize.Y+12)
@@ -720,6 +1283,7 @@ task.spawn(function()
             wb.LayoutOrder = i
             wb.Parent = WrapScroll
             Rnd(wb, 5)
+            Str(wb, C.SEP, 1)
             -- pin top two with accent
             if wrap == "None" or wrap == "Dark" then
                 Str(wb, Color3.fromRGB(180,180,200), 1)
@@ -737,39 +1301,51 @@ task.spawn(function()
 
     local function RefreshRight()
         local isPerfTab = _G.ActiveTab == "Performance"
-        -- toggle left panel visibility and resize right panel
-        LeftPanel.Visible = not isPerfTab
+        local isFinTab  = _G.ActiveTab == "Finishers"
+        -- hide/show left panel
+        LeftPanel.Visible = not isPerfTab and not isFinTab
+        -- reset all scrolls
+        SkinScroll.Visible = false
+        WrapScroll.Visible = false
+        PerfScroll.Visible = false
+        FinisherScroll.Visible = false
+
         if isPerfTab then
             RightPanel.Size = UDim2.new(1, -MARGIN*2, 0, CH - MARGIN*2)
             RightPanel.Position = UDim2.new(0, MARGIN, 0, CY + MARGIN)
-            SkinScroll.Visible = false
-            WrapScroll.Visible = false
             PerfScroll.Visible = true
             SelLbl.Text = "⚡  Performance & Visuals"
             return
         end
+        if isFinTab then
+            RightPanel.Size = UDim2.new(1, -MARGIN*2, 0, CH - MARGIN*2)
+            RightPanel.Position = UDim2.new(0, MARGIN, 0, CY + MARGIN)
+            FinisherScroll.Visible = true
+            FinisherScroll.CanvasSize = UDim2.new(0,0,0,FinisherGrid.AbsoluteContentSize.Y+12)
+            SelLbl.Text = "💀  Kill Finishers  —  All Unlocked"
+            return
+        end
         RightPanel.Size = UDim2.new(1, -(262+MARGIN*3), 0, CH - MARGIN*2)
         RightPanel.Position = UDim2.new(0, 262+MARGIN*2, 0, CY + MARGIN)
-        PerfScroll.Visible = false
 
         if not currentWeapon then
-            SkinScroll.Visible = false WrapScroll.Visible = false
             SelLbl.Text = "Select a weapon from the left" return
         end
         if _G.ActiveTab == "Skins" then
-            SkinScroll.Visible = true WrapScroll.Visible = false
+            SkinScroll.Visible = true
             PopulateSkins(currentWeapon)
             SelLbl.Text = currentWeapon .. "  —  Choose a Skin"
         else
-            SkinScroll.Visible = false WrapScroll.Visible = true
+            WrapScroll.Visible = true
             PopulateWraps(currentWeapon)
             SelLbl.Text = currentWeapon .. "  —  Choose a Wrap"
         end
     end
 
-    SkinsTabBtn.MouseButton1Click:Connect(function() SetTab("Skins") RefreshRight() end)
-    WrapsTabBtn.MouseButton1Click:Connect(function() SetTab("Wraps") RefreshRight() end)
-    PerfTabBtn.MouseButton1Click:Connect(function() SetTab("Performance") RefreshRight() end)
+    SkinsTabBtn.MouseButton1Click:Connect(function()    SetTab("Skins")       RefreshRight() end)
+    WrapsTabBtn.MouseButton1Click:Connect(function()    SetTab("Wraps")       RefreshRight() end)
+    PerfTabBtn.MouseButton1Click:Connect(function()     SetTab("Performance") RefreshRight() end)
+    FinisherTabBtn.MouseButton1Click:Connect(function() SetTab("Finishers")   RefreshRight() end)
 
     -- Build weapon list
     for wp in pairs(SkinLists) do
@@ -781,6 +1357,7 @@ task.spawn(function()
         btn.AutoButtonColor = false
         btn.Parent = WScroll
         Rnd(btn, 6)
+        Str(btn, C.SEP, 1)
         wBtns[wp] = btn
 
         local wlbl = Instance.new("TextLabel", btn)
@@ -870,5 +1447,5 @@ task.spawn(function()
         end
     end)
 
-    print("[+] Aniha Skin Changer v3.0 ready. Press K to toggle.")
+    print("[+] Aniha Skin Changer v4.0 ready. Press K to toggle.")
 end)
