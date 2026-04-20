@@ -104,7 +104,7 @@ end
 
 _G.PerfSettings = _G.PerfSettings or { DamageColor = Color3.fromRGB(255,50,50) }
 _G.OutlineSettings = _G.OutlineSettings or { Enabled=true, Color=Color3.fromRGB(255,80,80) }
-_G.AimAssist = _G.AimAssist or { Enabled=false, Strength=0.4, Range=80 }
+_G.AimAssist = _G.AimAssist or { Enabled=false, Strength=0.4, Range=80, HitboxExpand=false, HitboxSize=1.5 }
 _G.WeaponHidden = _G.WeaponHidden or false
 _G.ArmsHidden   = _G.ArmsHidden   or false
 _G.HideMuzzle   = _G.HideMuzzle   or false
@@ -260,15 +260,23 @@ end
 -- ═══════════════════════════════════════════════
 local function ApplyHideMuzzle(on)
     _G.HideMuzzle = on
-    if _G.MuzzleConn then _G.MuzzleConn:Disconnect() end
+    if _G.MuzzleConn  then _G.MuzzleConn:Disconnect()  end
+    if _G.MuzzleConn2 then _G.MuzzleConn2:Disconnect() end
+    if _G.MuzzleLoop  then _G.MuzzleLoop:Disconnect()  end
+    local MUZZLE_KEYS = {"muzzle","flash","fire","spark","shoot","shot","emit","blast","bang","gun","shoot","effect","vfx","fx","light"}
+    local function isMuzzle(n)
+        for _,k in ipairs(MUZZLE_KEYS) do if n:find(k) then return true end end
+        return false
+    end
     local function patchMuzzle(v)
         local n = v.Name:lower()
-        if n:find("muzzle") or n:find("flash") or n:find("fire") or n:find("spark") then
-            if v:IsA("ParticleEmitter") or v:IsA("PointLight") or v:IsA("SpotLight") or v:IsA("Beam") then
-                if not v:GetAttribute("AnihaOrigEnabled") then
-                    v:SetAttribute("AnihaOrigEnabled", v.Enabled)
-                end
+        if isMuzzle(n) then
+            if v:IsA("ParticleEmitter") or v:IsA("PointLight") or v:IsA("SpotLight") or v:IsA("SurfaceLight") or v:IsA("Beam") or v:IsA("Trail") then
                 v.Enabled = not on
+                if v:IsA("PointLight") or v:IsA("SpotLight") or v:IsA("SurfaceLight") then
+                    v.Brightness = on and 0 or (v:GetAttribute("AnihaOrigBright") or 1)
+                    if not v:GetAttribute("AnihaOrigBright") then v:SetAttribute("AnihaOrigBright", v.Brightness) end
+                end
             end
         end
     end
@@ -277,23 +285,37 @@ local function ApplyHideMuzzle(on)
         if cam then for _,v in pairs(cam:GetDescendants()) do patchMuzzle(v) end end
         local char = player.Character
         if char then for _,v in pairs(char:GetDescendants()) do patchMuzzle(v) end end
-        _G.MuzzleConn = workspace.DescendantAdded:Connect(function(v)
-            if _G.HideMuzzle then task.defer(function() patchMuzzle(v) end) end
+        for _,v in pairs(workspace:GetDescendants()) do patchMuzzle(v) end
+        _G.MuzzleConn  = workspace.DescendantAdded:Connect(function(v) if _G.HideMuzzle then task.defer(function() patchMuzzle(v) end) end end)
+        _G.MuzzleConn2 = player.CharacterAdded:Connect(function(c) task.wait(0.1) for _,v in pairs(c:GetDescendants()) do if _G.HideMuzzle then patchMuzzle(v) end end end)
+        -- RunService loop to catch rapid-spawn particles each frame
+        _G.MuzzleLoop  = RunService.Heartbeat:Connect(function()
+            if not _G.HideMuzzle then return end
+            local c2 = workspace.CurrentCamera
+            if c2 then for _,v in pairs(c2:GetDescendants()) do patchMuzzle(v) end end
         end)
     end)
 end
 
 local function ApplyHideBullets(on)
     _G.HideBullets = on
-    if _G.BulletConn then _G.BulletConn:Disconnect() end
+    if _G.BulletConn  then _G.BulletConn:Disconnect()  end
+    if _G.BulletConn2 then _G.BulletConn2:Disconnect() end
+    if _G.BulletLoop  then _G.BulletLoop:Disconnect()  end
+    local BULLET_KEYS = {"bullet","proj","pellet","ball","tracer","ray","shell","slug","round","shard","bolt","arrow","dart","missile","rocket","fragment","debris","particle"}
+    local function isBullet(n)
+        for _,k in ipairs(BULLET_KEYS) do if n:find(k) then return true end end
+        return false
+    end
     local function patchBullet(v)
         local n = v.Name:lower()
-        if n:find("bullet") or n:find("proj") or n:find("pellet") or n:find("ball") or n:find("tracer") or n:find("ray") then
-            if v:IsA("BasePart") or v:IsA("MeshPart") or v:IsA("Trail") or v:IsA("Beam") then
-                if v:IsA("Trail") or v:IsA("Beam") then
-                    v.Enabled = not on
-                else
-                    v.LocalTransparencyModifier = on and 1 or 0
+        if isBullet(n) then
+            if v:IsA("Trail") or v:IsA("Beam") or v:IsA("ParticleEmitter") then
+                v.Enabled = not on
+            elseif v:IsA("BasePart") or v:IsA("MeshPart") or v:IsA("SpecialMesh") then
+                v.LocalTransparencyModifier = on and 1 or 0
+                if v:IsA("BasePart") or v:IsA("MeshPart") then
+                    v.Transparency = on and 1 or 0
                 end
             end
         end
@@ -302,6 +324,21 @@ local function ApplyHideBullets(on)
         for _,v in pairs(workspace:GetDescendants()) do patchBullet(v) end
         _G.BulletConn = workspace.DescendantAdded:Connect(function(v)
             if _G.HideBullets then task.defer(function() patchBullet(v) end) end
+        end)
+        -- heartbeat loop catches fast-moving projectiles every frame
+        _G.BulletLoop = RunService.Heartbeat:Connect(function()
+            if not _G.HideBullets then return end
+            for _,v in pairs(workspace:GetDescendants()) do
+                local n = v.Name:lower()
+                if isBullet(n) then
+                    if v:IsA("Trail") or v:IsA("Beam") or v:IsA("ParticleEmitter") then
+                        if v.Enabled then v.Enabled = false end
+                    elseif (v:IsA("BasePart") or v:IsA("MeshPart")) and v.LocalTransparencyModifier ~= 1 then
+                        v.LocalTransparencyModifier = 1
+                        v.Transparency = 1
+                    end
+                end
+            end
         end)
     end)
 end
@@ -379,7 +416,37 @@ local function ApplyHideArms(on)
     end)
 end
 
--- Heartbeat loop to keep hide states
+-- ═══════════════════════════════════════════════
+-- HIDE HUD WEAPON SLOTS (bottom-right bar)
+-- ═══════════════════════════════════════════════
+_G.HideHUDSlots = false
+local function ApplyHideHUDSlots(on)
+    _G.HideHUDSlots = on
+    if _G.HUDSlotsConn then _G.HUDSlotsConn:Disconnect() end
+    local HUD_KEYS = {"hotbar","weapon","equip","hud","slot","inventory","toolbar","bar","loadout","quick","util","melee","item","gear"}
+    local function isHUDSlot(v)
+        if not v.Name then return false end
+        local n = v.Name:lower()
+        for _,k in ipairs(HUD_KEYS) do if n:find(k) then return true end end
+        return false
+    end
+    local function patchHUD(v)
+        if v:IsA("Frame") or v:IsA("ImageLabel") or v:IsA("ScreenGui") or v:IsA("BillboardGui") then
+            if isHUDSlot(v) then
+                -- Don't hide the search box or settings
+                if not (v.Name:lower():find("search") or v.Name:lower():find("setting") or v.Name:lower():find("chat")) then
+                    v.Visible = not on
+                end
+            end
+        end
+    end
+    pcall(function()
+        for _,v in pairs(player.PlayerGui:GetDescendants()) do patchHUD(v) end
+        _G.HUDSlotsConn = player.PlayerGui.DescendantAdded:Connect(function(v)
+            if _G.HideHUDSlots then task.defer(function() patchHUD(v) end) end
+        end)
+    end)
+end
 RunService.Heartbeat:Connect(function()
     pcall(function()
         local char = player.Character
@@ -575,9 +642,79 @@ local function FixRevolverSkin(CL)
 end
 
 -- ═══════════════════════════════════════════════
--- AIM ASSIST  (soft magnet — snaps crosshair slightly)
+-- AIM ASSIST  (strong magnet + hitbox expand)
 -- ═══════════════════════════════════════════════
 local aimAssistConn = nil
+
+local function ApplyHitboxExpand(on, size)
+    _G.AimAssist.HitboxExpand = on
+    _G.AimAssist.HitboxSize   = size or _G.AimAssist.HitboxSize
+    if _G.HitboxConn then _G.HitboxConn:Disconnect() end
+    local function patchHitbox(char)
+        if not char then return end
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") or part:IsA("MeshPart") then
+                local n = part.Name:lower()
+                -- Expand torso / head / limb hitboxes
+                if n:find("torso") or n:find("root") or n:find("head") or n:find("upper") or n:find("lower") or n:find("arm") or n:find("leg") then
+                    if on then
+                        if not part:GetAttribute("AnihaOrigSize") then
+                            part:SetAttribute("AnihaOrigSize", tostring(part.Size))
+                        end
+                        local orig = part:GetAttribute("AnihaOrigSize")
+                        if orig then
+                            local s = orig:split(", ")
+                            if #s == 3 then
+                                local os = Vector3.new(tonumber(s[1]),tonumber(s[2]),tonumber(s[3]))
+                                part.Size = os * (_G.AimAssist.HitboxSize or 1.5)
+                            end
+                        end
+                    else
+                        local orig = part:GetAttribute("AnihaOrigSize")
+                        if orig then
+                            local s = orig:split(", ")
+                            if #s == 3 then
+                                part.Size = Vector3.new(tonumber(s[1]),tonumber(s[2]),tonumber(s[3]))
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    pcall(function()
+        for _, plr in pairs(Players:GetPlayers()) do
+            if plr ~= player then patchHitbox(plr.Character) end
+        end
+        if on then
+            _G.HitboxConn = RunService.Heartbeat:Connect(function()
+                if not _G.AimAssist.HitboxExpand then return end
+                for _, plr in pairs(Players:GetPlayers()) do
+                    if plr ~= player and plr.Character then
+                        for _, part in pairs(plr.Character:GetDescendants()) do
+                            if (part:IsA("BasePart") or part:IsA("MeshPart")) then
+                                local n = part.Name:lower()
+                                if n:find("torso") or n:find("root") or n:find("head") then
+                                    local orig = part:GetAttribute("AnihaOrigSize")
+                                    if orig then
+                                        local s = orig:split(", ")
+                                        if #s == 3 then
+                                            local desired = Vector3.new(tonumber(s[1]),tonumber(s[2]),tonumber(s[3])) * _G.AimAssist.HitboxSize
+                                            if part.Size ~= desired then part.Size = desired end
+                                        end
+                                    else
+                                        part:SetAttribute("AnihaOrigSize", tostring(part.Size))
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end)
+end
+
 local function SetAimAssist(on)
     _G.AimAssist.Enabled = on
     if aimAssistConn then aimAssistConn:Disconnect() aimAssistConn = nil end
@@ -587,28 +724,39 @@ local function SetAimAssist(on)
             if not _G.AimAssist.Enabled then return end
             local cam     = workspace.CurrentCamera
             local range   = _G.AimAssist.Range
-            local strength= _G.AimAssist.Strength
+            local strength= _G.AimAssist.Strength  -- 0.1 – 2.0 scale
             local mx, my  = mouse.X, mouse.Y
             local vp      = cam.ViewportSize
             local bestDist= range
             local bestTarget = nil
+            local bestPart   = nil
 
             for _, plr in pairs(Players:GetPlayers()) do
                 if plr ~= player and plr.Character then
                     local char = plr.Character
-                    local root = char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
-                    if root then
-                        local _, onScreen = cam:WorldToViewportPoint(root.Position)
-                        if onScreen then
-                            local sPos, vis = cam:WorldToViewportPoint(root.Position)
-                            if vis then
-                                local dx = sPos.X - mx
-                                local dy = sPos.Y - my
-                                local dist = math.sqrt(dx*dx + dy*dy)
-                                if dist < bestDist then
-                                    bestDist   = dist
-                                    bestTarget = sPos
+                    local hum  = char:FindFirstChildOfClass("Humanoid")
+                    if hum and hum.Health > 0 then
+                        -- Prefer head then upper torso then HRP
+                        local targets = {
+                            char:FindFirstChild("Head"),
+                            char:FindFirstChild("UpperTorso"),
+                            char:FindFirstChild("HumanoidRootPart"),
+                            char:FindFirstChild("Torso"),
+                        }
+                        for _, root in pairs(targets) do
+                            if root and root:IsA("BasePart") then
+                                local sPos, vis = cam:WorldToViewportPoint(root.Position)
+                                if vis then
+                                    local dx = sPos.X - mx
+                                    local dy = sPos.Y - my
+                                    local dist = math.sqrt(dx*dx + dy*dy)
+                                    if dist < bestDist then
+                                        bestDist   = dist
+                                        bestTarget = sPos
+                                        bestPart   = root
+                                    end
                                 end
+                                break  -- found a valid target part for this player
                             end
                         end
                     end
@@ -616,17 +764,18 @@ local function SetAimAssist(on)
             end
 
             if bestTarget then
-                -- Softly pull mouse towards target
-                local newX = mx + (bestTarget.X - mx) * strength * 0.08
-                local newY = my + (bestTarget.Y - my) * strength * 0.08
-                -- Only move if within viewport
+                -- strength 1-20 mapped to pull factor 0.05 – 0.85 per frame
+                local pull = math.clamp(strength * 0.055, 0.04, 0.92)
+                local newX = mx + (bestTarget.X - mx) * pull
+                local newY = my + (bestTarget.Y - my) * pull
                 if newX > 0 and newX < vp.X and newY > 0 and newY < vp.Y then
                     pcall(function()
-                        -- Use mousemoverel if available (exploits)
+                        local dx = newX - mx
+                        local dy = newY - my
                         if mousemoverel then
-                            mousemoverel(newX - mx, newY - my)
+                            mousemoverel(dx, dy)
                         elseif mouse_moverel then
-                            mouse_moverel(newX - mx, newY - my)
+                            mouse_moverel(dx, dy)
                         end
                     end)
                 end
@@ -1161,25 +1310,41 @@ task.spawn(function()
         Flash(_G.AimAssist.Enabled and "🎯 Aim Assist ON" or "🎯 Aim Assist OFF", C.ORANGE)
     end)
 
-    -- Strength slider
-    AimSlider("Aim Assist Strength","How hard it pulls toward enemies (higher = stronger)",3,1,10,4,function(v)
-        _G.AimAssist.Strength = v/10
+    -- Strength slider (1-20, default 4)
+    AimSlider("Aim Assist Strength","How hard it pulls toward enemies — 1=gentle, 10=strong, 20=lock-on",3,1,20,4,function(v)
+        _G.AimAssist.Strength = v
     end)
 
     -- Range slider
-    AimSlider("Detection Range (px)","Screen-space pixel radius around crosshair to look for enemies",4,30,200,80,function(v)
+    AimSlider("Detection Range (px)","Screen-space pixel radius around crosshair to look for enemies",4,30,300,80,function(v)
         _G.AimAssist.Range = v
     end)
 
-    AimHeader("ℹ️  HOW IT WORKS",5,C.DIM)
+    AimHeader("📦  HITBOX EXPANSION",7,C.CYAN)
+
+    -- Hitbox expand toggle
+    local hbState = false
+    local setHbToggle = AimToggle("Expand Player Hitboxes","Makes enemy colliders slightly larger — easier to register hits",8,function(on)
+        hbState = on
+        ApplyHitboxExpand(on, _G.AimAssist.HitboxSize)
+        Flash(on and "📦 Hitbox Expand ON" or "📦 Hitbox Expand OFF", C.CYAN)
+    end, C.CYAN)
+
+    -- Hitbox size slider
+    AimSlider("Hitbox Expand Size","Multiplier applied to enemy part sizes (1.0 = normal, 2.0 = double)",9,10,30,15,function(v)
+        _G.AimAssist.HitboxSize = v/10
+        if _G.AimAssist.HitboxExpand then ApplyHitboxExpand(true, v/10) end
+    end)
+
+    AimHeader("ℹ️  HOW IT WORKS",10,C.DIM)
     local infoCard=Instance.new("Frame",AimScroll)
     infoCard.Size=UDim2.new(1,-8,0,90) infoCard.BackgroundColor3=C.CARD
-    infoCard.BorderSizePixel=0 infoCard.LayoutOrder=6 Rnd(infoCard,8) Str(infoCard,C.SEP,1)
+    infoCard.BorderSizePixel=0 infoCard.LayoutOrder=11 Rnd(infoCard,8) Str(infoCard,C.SEP,1)
     local infoTxt=Instance.new("TextLabel",infoCard)
     infoTxt.Size=UDim2.new(1,-20,1,-10) infoTxt.Position=UDim2.new(0,10,0,5)
     infoTxt.BackgroundTransparency=1 infoTxt.TextColor3=C.DIM infoTxt.TextWrapped=true
     infoTxt.Font=Enum.Font.Gotham infoTxt.TextSize=12 infoTxt.TextXAlignment=Enum.TextXAlignment.Left
-    infoTxt.Text="Aim Assist softly nudges your cursor toward the nearest enemy's torso within the detection radius. It works like a gentle magnet — it only helps, never locks on. Low strength = learning assist. Higher strength = stronger pull.\n\nRequires an executor with mousemoverel support."
+    infoTxt.Text="Aim Assist snaps your cursor toward the nearest visible enemy. Strength 1–10 is a learning aid. 11–20 becomes very aggressive. Detection Range is the screen-pixel radius to scan.\n\nHitbox Expand scales enemy collision boxes so it's easier to register hits. Requires an executor with mousemoverel support."
 
     -- ════════════════════════════════════════════
     -- PERF TAB CONTENTS
@@ -1233,6 +1398,7 @@ task.spawn(function()
     PToggle("Hide Reload Indicator","Hides the reload bar and ammo UI symbols",14,ApplyHideReload,C.CYAN)
     PToggle("Hide Player Names","Removes overhead name tags on all players",15,ApplyHideNames,C.CYAN)
     PToggle("Hide Chat Window","Hides chat display  (type / to still chat)",16,ApplyHideChat,C.CYAN)
+    PToggle("Hide HUD Weapon Slots","Hides the bottom-right weapon/utility hotbar",17,ApplyHideHUDSlots,C.CYAN)
 
     -- HIT OUTLINE
     PHeader("🎯  HIT OUTLINE",19,C.PURPLE)
@@ -1292,6 +1458,38 @@ task.spawn(function()
             Flash("🎯 Outline: "..opt.n,opt.c)
         end)
     end
+    -- Hex input for outline color
+    local oclHexRow=Instance.new("Frame",PerfScroll) oclHexRow.Size=UDim2.new(1,-8,0,44)
+    oclHexRow.BackgroundColor3=C.CARD oclHexRow.BorderSizePixel=0 oclHexRow.LayoutOrder=23
+    Rnd(oclHexRow,7) Str(oclHexRow,C.SEP,1)
+    local oclHexLb=Instance.new("TextLabel",oclHexRow) oclHexLb.Size=UDim2.new(0,120,1,0) oclHexLb.Position=UDim2.new(0,12,0,0)
+    oclHexLb.BackgroundTransparency=1 oclHexLb.Text="🎨 Custom Hex:" oclHexLb.TextColor3=C.PURPLE
+    oclHexLb.Font=Enum.Font.GothamBold oclHexLb.TextSize=12 oclHexLb.TextXAlignment=Enum.TextXAlignment.Left
+    local oclPreview=Instance.new("Frame",oclHexRow) oclPreview.Size=UDim2.new(0,24,0,24) oclPreview.Position=UDim2.new(0,134,0.5,-12)
+    oclPreview.BackgroundColor3=_G.OutlineSettings.Color oclPreview.BorderSizePixel=0 Rnd(oclPreview,5) Str(oclPreview,C.SEP,1)
+    local oclHexBox=Instance.new("TextBox",oclHexRow) oclHexBox.Size=UDim2.new(0,120,0,28) oclHexBox.Position=UDim2.new(0,165,0.5,-14)
+    oclHexBox.BackgroundColor3=C.PANEL oclHexBox.Text="#FF5050" oclHexBox.TextColor3=C.TEXT
+    oclHexBox.Font=Enum.Font.Code oclHexBox.TextSize=13 oclHexBox.BorderSizePixel=0 oclHexBox.ClearTextOnFocus=false
+    Rnd(oclHexBox,5) Str(oclHexBox,C.SEP,1) Pad(oclHexBox,0,0,6,6)
+    local oclApplyBtn=Instance.new("TextButton",oclHexRow) oclApplyBtn.Size=UDim2.new(0,56,0,28) oclApplyBtn.Position=UDim2.new(0,292,0.5,-14)
+    oclApplyBtn.BackgroundColor3=C.PURPLE oclApplyBtn.Text="Apply" oclApplyBtn.TextColor3=Color3.new(1,1,1)
+    oclApplyBtn.Font=Enum.Font.GothamBold oclApplyBtn.TextSize=12 oclApplyBtn.BorderSizePixel=0 Rnd(oclApplyBtn,5)
+    local function ParseHex(h)
+        h = h:gsub("#",""):gsub("0x",""):upper()
+        if #h==6 then
+            local r,g,b=tonumber(h:sub(1,2),16),tonumber(h:sub(3,4),16),tonumber(h:sub(5,6),16)
+            if r and g and b then return Color3.fromRGB(r,g,b) end
+        end
+        return nil
+    end
+    oclApplyBtn.MouseButton1Click:Connect(function()
+        local col=ParseHex(oclHexBox.Text)
+        if col then
+            if activeOclStroke then activeOclStroke.Thickness=0 activeOclStroke=nil end
+            _G.OutlineSettings.Color=col oclPreview.BackgroundColor3=col
+            ApplyOutlineSettings() Flash("🎯 Outline: "..oclHexBox.Text,col)
+        else Flash("❌ Invalid hex!",C.RED) end
+    end)
 
     -- DAMAGE COLOR
     PHeader("🎨  DAMAGE NUMBER COLOR",29,C.GOLD)
@@ -1324,6 +1522,38 @@ task.spawn(function()
             Flash("🎨 Damage color: "..opt.n,opt.c)
         end)
     end
+    -- Hex input for damage color
+    local dmgHexRow=Instance.new("Frame",PerfScroll) dmgHexRow.Size=UDim2.new(1,-8,0,44)
+    dmgHexRow.BackgroundColor3=C.CARD dmgHexRow.BorderSizePixel=0 dmgHexRow.LayoutOrder=31
+    Rnd(dmgHexRow,7) Str(dmgHexRow,C.SEP,1)
+    local dmgHexLb=Instance.new("TextLabel",dmgHexRow) dmgHexLb.Size=UDim2.new(0,120,1,0) dmgHexLb.Position=UDim2.new(0,12,0,0)
+    dmgHexLb.BackgroundTransparency=1 dmgHexLb.Text="🎨 Custom Hex:" dmgHexLb.TextColor3=C.GOLD
+    dmgHexLb.Font=Enum.Font.GothamBold dmgHexLb.TextSize=12 dmgHexLb.TextXAlignment=Enum.TextXAlignment.Left
+    local dmgPreview=Instance.new("Frame",dmgHexRow) dmgPreview.Size=UDim2.new(0,24,0,24) dmgPreview.Position=UDim2.new(0,134,0.5,-12)
+    dmgPreview.BackgroundColor3=Color3.fromRGB(230,55,55) dmgPreview.BorderSizePixel=0 Rnd(dmgPreview,5) Str(dmgPreview,C.SEP,1)
+    local dmgHexBox=Instance.new("TextBox",dmgHexRow) dmgHexBox.Size=UDim2.new(0,120,0,28) dmgHexBox.Position=UDim2.new(0,165,0.5,-14)
+    dmgHexBox.BackgroundColor3=C.PANEL dmgHexBox.Text="#E63737" dmgHexBox.TextColor3=C.TEXT
+    dmgHexBox.Font=Enum.Font.Code dmgHexBox.TextSize=13 dmgHexBox.BorderSizePixel=0 dmgHexBox.ClearTextOnFocus=false
+    Rnd(dmgHexBox,5) Str(dmgHexBox,C.SEP,1) Pad(dmgHexBox,0,0,6,6)
+    local dmgApplyBtn=Instance.new("TextButton",dmgHexRow) dmgApplyBtn.Size=UDim2.new(0,56,0,28) dmgApplyBtn.Position=UDim2.new(0,292,0.5,-14)
+    dmgApplyBtn.BackgroundColor3=C.GOLD dmgApplyBtn.Text="Apply" dmgApplyBtn.TextColor3=Color3.new(0,0,0)
+    dmgApplyBtn.Font=Enum.Font.GothamBold dmgApplyBtn.TextSize=12 dmgApplyBtn.BorderSizePixel=0 Rnd(dmgApplyBtn,5)
+    local function ParseHexDmg(h)
+        h = h:gsub("#",""):gsub("0x",""):upper()
+        if #h==6 then
+            local r,g,b=tonumber(h:sub(1,2),16),tonumber(h:sub(3,4),16),tonumber(h:sub(5,6),16)
+            if r and g and b then return Color3.fromRGB(r,g,b) end
+        end
+        return nil
+    end
+    dmgApplyBtn.MouseButton1Click:Connect(function()
+        local col=ParseHexDmg(dmgHexBox.Text)
+        if col then
+            if activeDmgStroke then activeDmgStroke.Thickness=0 activeDmgStroke=nil end
+            dmgPreview.BackgroundColor3=col
+            ApplyDamageColor(col) Flash("🎨 Damage: "..dmgHexBox.Text,col)
+        else Flash("❌ Invalid hex!",C.RED) end
+    end)
     -- Apply default red on load
     ApplyDamageColor(Color3.fromRGB(230,55,55))
 
